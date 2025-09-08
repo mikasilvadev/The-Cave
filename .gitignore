@@ -7,6 +7,9 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
+# Pasta de backup pessoal (da sua estrutura)
+/backups/
+
 # MemoryCaptures can be huge
 /[Mm]emoryCaptures/
 
