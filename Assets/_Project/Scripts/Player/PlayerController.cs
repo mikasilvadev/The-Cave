@@ -3,7 +3,6 @@ using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
-    // --- COMPONENTES E MOVIMENTO ---
     private CharacterController controller;
     private Vector3 playerVelocity;
     private bool groundedPlayer;
@@ -13,12 +12,12 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 1.0f;
     public float gravityValue = -9.81f;
     public float pushPower = 2.0f;
-    // Propriedade pública para que outros scripts (como a IA) possam ler a velocidade
     public Vector3 CurrentVelocity { get; private set; }
+
+    public bool IsRunning { get; private set; }
 
     public bool podeMover = true;
 
-    // --- CÂMERA E CONTROLES ---
     private PlayerControls playerControls;
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -26,7 +25,6 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 5.0f;
     private float xRotation = 0f;
 
-    // --- SISTEMA DE LANTERNA E INVENTÁRIO ---
     [Header("Flashlight & Inventory")]
     public Transform pickupZoneCenter;
     public float pickupRange = 1f;
@@ -40,7 +38,6 @@ public class PlayerController : MonoBehaviour
     private Light heldFlashlightLight;
     private FlashlightItem lastHighlightedItem = null;
 
-    // --- LANTERNA DINÂMICA ---
     [Header("Dynamic Flashlight Settings")]
     private Transform activeFlashlightTransform;
     public float maxFlashlightAngle = 25f;
@@ -88,20 +85,18 @@ public class PlayerController : MonoBehaviour
         {
             playerVelocity.y = 0f;
         }
+
         moveInput = playerControls.Player.Move.ReadValue<Vector2>();
-        bool isSprinting = playerControls.Player.Sprint.IsPressed();
-        currentSpeed = isSprinting ? sprintSpeed : playerSpeed;
+
+        bool isSprintingInput = playerControls.Player.Sprint.IsPressed();
+
+        currentSpeed = isSprintingInput ? sprintSpeed : playerSpeed;
+
+        IsRunning = isSprintingInput && moveInput.magnitude > 0.1f;
+
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * currentSpeed * Time.deltaTime);
 
-        // Aplica o pulo (se houver lógica de pulo aqui)
-        // ...
-
-        playerVelocity.y += gravityValue * Time.deltaTime;
-        controller.Move(playerVelocity * Time.deltaTime);
-
-        // --- LINHA ADICIONADA ---
-        // Atualiza a propriedade pública com a velocidade real do CharacterController.
         CurrentVelocity = controller.velocity;
     }
 

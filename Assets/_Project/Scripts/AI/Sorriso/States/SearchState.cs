@@ -1,5 +1,3 @@
-// Scripts/Monstro/States/SearchState.cs
-
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -47,11 +45,7 @@ public class SearchState : BaseState
                     Vector3 lastPos = controller.LastKnownPlayerPosition;
                     Vector3 lastVel = controller.LastKnownPlayerVelocity;
 
-                    // --- MUDANÇA CRÍTICA NA FÓRMULA DE PREVISÃO ---
-                    // Posição Futura = Posição Atual + (Velocidade * Tempo)
-                    // REMOVEMOS o '.normalized' para usar a velocidade real do jogador!
                     Vector3 predictedPosition = lastPos + lastVel * controller.predictionTime;
-                    // --- FIM DA MUDANÇA ---
 
                     NavMesh.SamplePosition(predictedPosition, out NavMeshHit hit, 5f, NavMesh.AllAreas);
                     Vector3 destination = hit.position;

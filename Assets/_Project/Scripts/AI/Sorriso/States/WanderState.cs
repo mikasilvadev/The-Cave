@@ -1,5 +1,3 @@
-// Scripts/AI/Sorriso/States/WanderState.cs
-
 using UnityEngine;
 using UnityEngine.AI;
 

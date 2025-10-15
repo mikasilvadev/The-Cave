@@ -1,60 +1,82 @@
-// Scripts/AI/Sorriso/States/ChaseState.cs
-
 using UnityEngine;
 
 public class ChaseState : BaseState
 {
-    private float catchDistance = 1.5f;
+    private float catchDistance = 1.8f;
 
     public override void Enter(AIController controller)
     {
         Debug.Log("<color=red>CHASE:</color> Iniciando perseguição!", controller.gameObject);
         controller.Agent.speed = controller.chaseSpeed;
+        controller.Agent.stoppingDistance = catchDistance;
 
-        // --- NOVO: Assumimos o controle da rotação ---
-        // Desligamos a rotação automática do NavMeshAgent. Nós vamos controlá-la.
         controller.Agent.updateRotation = false;
     }
 
     public override void Execute(AIController controller)
     {
+        Vector3 soundPos = Vector3.zero;
+        bool heardSound = controller.Senses.CheckForSound(out soundPos);
+
         if (controller.Senses.CanSeePlayer(out Vector3 playerPos))
         {
-            // A lógica de movimento continua a mesma: vá para a posição do jogador.
+            controller.Agent.stoppingDistance = catchDistance;
             controller.Agent.SetDestination(playerPos);
             controller.LastKnownPlayerPosition = playerPos;
             controller.LastKnownPlayerVelocity = controller.PlayerController.CurrentVelocity;
 
-            // --- LÓGICA DE ROTAÇÃO SUAVE ---
-            // 1. Calcula a direção para o jogador, ignorando a altura (eixo Y).
             Vector3 directionToPlayer = (playerPos - controller.transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
 
-            // 2. Aplica a rotação de forma suave ao longo do tempo.
-            // O monstro vai virar gradualmente para encarar o jogador enquanto se move.
             controller.transform.rotation = Quaternion.Slerp(
                 controller.transform.rotation,
                 targetRotation,
                 Time.deltaTime * controller.chaseRotationSpeed
             );
-            // --- FIM DA LÓGICA DE ROTAÇÃO ---
 
             if (Vector3.Distance(controller.transform.position, playerPos) < catchDistance)
             {
-                Debug.LogError("CHASE: O JOGADOR FOI PEGO!", controller.gameObject);
+                Debug.LogError("CHASE: O JOGADOR FOI PEGO! REINICIANDO O JOGO.", controller.gameObject);
+
+                controller.Agent.isStopped = true;
+
+                controller.gameObject.SetActive(false);
+
+                controller.GameOverAndRestart();
+
+                return;
             }
         }
         else
         {
-            Debug.LogWarning("CHASE: Perdeu o jogador de vista. Mudando para SearchState.", controller.gameObject);
-            controller.ChangeState(new SearchState());
+            bool playerMovingInDark = !controller.Senses.playerFlashlight.enabled && heardSound;
+
+            if (playerMovingInDark)
+            {
+                controller.Agent.stoppingDistance = controller.darkStopDistance;
+                controller.Agent.SetDestination(controller.LastKnownPlayerPosition);
+
+                Debug.Log($"CHASE: Jogador no escuro! Indo para {controller.darkStopDistance}m da última posição vista, ouvindo.", controller.gameObject);
+
+                if (!controller.Agent.pathPending && controller.Agent.remainingDistance <= controller.Agent.stoppingDistance)
+                {
+                    Debug.Log("CHASE: Chegou à distância de parada. Mudando para InvestigateState para seguir o som.", controller.gameObject);
+
+                    controller.ChangeState(new InvestigateState(soundPos));
+                }
+            }
+            else
+            {
+                Debug.LogWarning("CHASE: Perdeu o jogador de vista (bloqueio ou jogador parado). Mudando para SearchState.", controller.gameObject);
+                controller.ChangeState(new SearchState());
+            }
         }
     }
 
     public override void Exit(AIController controller)
     {
-        // --- NOVO: Devolvemos o controle da rotação ---
-        // Ao sair do estado de perseguição, reativamos a rotação padrão do agente.
         controller.Agent.updateRotation = true;
+        controller.Agent.stoppingDistance = 0.5f;
+        Debug.Log("<color=red>CHASE:</color> Fim da perseguição.", controller.gameObject);
     }
 }

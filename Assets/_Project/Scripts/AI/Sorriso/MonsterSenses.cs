@@ -1,5 +1,3 @@
-// Scripts/AI/Sorriso/MonsterSenses.cs
-
 using UnityEngine;
 
 public class MonsterSenses : MonoBehaviour
@@ -15,10 +13,13 @@ public class MonsterSenses : MonoBehaviour
     public float runningSoundMultiplier = 1.5f;
 
     private Transform player;
+    private PlayerController playerController;
 
     void Start()
     {
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+        player = playerObject.transform;
+        playerController = playerObject.GetComponent<PlayerController>();
     }
 
     public bool CanSeePlayer(out Vector3 playerPosition)
@@ -38,7 +39,7 @@ public class MonsterSenses : MonoBehaviour
 
         if (Physics.Raycast(transform.position, directionToPlayer, out RaycastHit hit, visionDistance, visionMask))
         {
-            Debug.DrawRay(transform.position, directionToPlayer * hit.distance, Color.cyan, 1.0f); // Desenha o raio na cena
+            Debug.DrawRay(transform.position, directionToPlayer * hit.distance, Color.cyan, 1.0f);
 
             if (hit.collider.CompareTag("Player"))
             {
@@ -55,8 +56,22 @@ public class MonsterSenses : MonoBehaviour
         return false;
     }
 
-    public bool CanHearSound(Vector3 soundOrigin, float soundRadius)
+    public bool CheckForSound(out Vector3 soundPosition)
     {
-        return Vector3.Distance(transform.position, soundOrigin) <= soundRadius;
+        soundPosition = player.position;
+        float finalHearingRadius = baseHearingRadius;
+
+        if (playerController != null && playerController.IsRunning)
+        {
+            finalHearingRadius *= runningSoundMultiplier;
+        }
+
+        if (Vector3.Distance(transform.position, soundPosition) <= finalHearingRadius)
+        {
+            Debug.Log($"<color=yellow>SENSES: Som do jogador detectado! Raio: {finalHearingRadius}m</color>", this.gameObject);
+            return true;
+        }
+
+        return false;
     }
 }

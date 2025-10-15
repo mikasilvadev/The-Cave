@@ -1,9 +1,8 @@
-// Este código não é C#, é HLSL (linguagem de shader)
 Shader "Custom/ColorAndOutlineShader"
 {
     Properties
     {
-        _BaseColor("Base Color", Color) = (0.5, 0.5, 0.5, 1) // Cinza por padrão
+        _BaseColor("Base Color", Color) = (0.5, 0.5, 0.5, 1)
         _OutlineColor("Outline Color", Color) = (1, 1, 0, 1)
         _OutlinePower("Outline Power", Range(1.0, 20.0)) = 5.0
         _OutlineWidth("Outline Width", Range(0.0, 1.0)) = 0.5

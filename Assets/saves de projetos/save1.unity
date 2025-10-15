@@ -3673,6 +3673,7 @@ PrefabInstance:
     - {fileID: 8959671623559953933, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
     - {fileID: 2921344008624049533, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
     - {fileID: 2569373033537846648, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
+    - {fileID: 1858898561342459823, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2430487599585796444, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
@@ -3685,6 +3686,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4276746937949932524, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1163097746}
+    - targetCorrespondingSourceObject: {fileID: 4276746937949932524, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1163097752}
+    - targetCorrespondingSourceObject: {fileID: 4276746937949932524, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1163097751}
+    - targetCorrespondingSourceObject: {fileID: 4276746937949932524, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1163097750}
   m_SourcePrefab: {fileID: 100100000, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
 --- !u!1 &502944099
 GameObject:
@@ -27189,10 +27199,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70443d02c0ad7fd48843cc2d006c5008, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIController
-  wanderSpeed: 2
-  chaseSpeed: 5
+  wanderSpeed: 8
+  chaseSpeed: 14
   searchSpeed: 3.5
-  chaseRotationSpeed: 5
+  chaseRotationSpeed: 30
+  investigateRotationSpeed: 3
+  darkStopDistance: 3
+  soundStopDistance: 1
+  wanderAnimSpeed: 1
+  chaseAnimSpeed: 2.3
+  searchAnimSpeed: 1.2
+  restartFadeTime: 2
   predictionDistance: 6
   predictionTime: 1.5
   currentStateName: 
@@ -27209,13 +27226,153 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSenses
   playerFlashlight: {fileID: 1543002648}
-  visionAngle: 90
+  visionAngle: 150
   visionDistance: 20
   visionMask:
     serializedVersion: 2
     m_Bits: 72
   baseHearingRadius: 15
   runningSoundMultiplier: 1.5
+--- !u!95 &1163097750
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1163097741}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: 4867cf3e1105aec45aea620261ea0dc0, type: 3}
+  m_Controller: {fileID: 9100000, guid: c37accfd3a4b9c54abab2980180cacdf, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1163097751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1163097741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e4f2bcca453d2c4398b2b09cb509aac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterAudio
+  footstepClips:
+  - {fileID: 8300000, guid: c325a30756fcf7c49a3e306928863366, type: 3}
+  - {fileID: 8300000, guid: 93665b78c0835624c809433f52a07f9f, type: 3}
+  - {fileID: 8300000, guid: df75bd94d3018db46ac82c60a590dcf9, type: 3}
+  - {fileID: 8300000, guid: c802fa12da8be004aabd71188b6c8d59, type: 3}
+  - {fileID: 8300000, guid: ef724e38a9cc1cf429b99a4880365778, type: 3}
+  - {fileID: 8300000, guid: 1ca5350575ccb134886b69fa226a415e, type: 3}
+  - {fileID: 8300000, guid: c1c5d0c06b3cded478ebe1cb5e72d34d, type: 3}
+  movingClip: {fileID: 0}
+--- !u!82 &1163097752
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1163097741}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 0.25
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 20
+  Pan2D: 0
+  rolloffMode: 1
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &1214979128 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4441705975755600363, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
