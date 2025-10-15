@@ -1,4 +1,4 @@
-# The Cave - O Jogo Mais Assustador do Mundo
+# The Cave
 
 ## 🌑 Visão Geral do Projeto
 
