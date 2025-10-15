@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 3
   tags:
   - Interactable
+  - PortaFinal
+  - PlayerLightSource
+  - SearchPoint
+  - HidingSpot
   layers:
   - Default
   - TransparentFX

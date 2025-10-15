@@ -1,28 +1,22 @@
-# Unity
+# Unity Project Generated Files
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
+/[Mm]emoryCaptures/
+/[Rr]eports/
 /[Uu]ser[Ss]ettings/
 
-# Pasta de backup pessoal (da sua estrutura)
-/backups/
-
-# MemoryCaptures can be huge
-/[Mm]emoryCaptures/
-
-# Asset meta data should only be ignored when the asset itself is ignored
-!/[Aa]ssets/**/*.meta
-
-# Visual Studio / Rider
+# Visual Studio / Rider Generated Files
 .vs/
 .vscode/
-[Ee]xported[Oo]bj/
-.idea/
+*.csproj
+*.unityproj
 *.sln
 *.suo
+*.tmp
 *.user
 *.userprefs
 *.pidb
@@ -33,15 +27,5 @@
 *.opendb
 *.VC.db
 
-# Rider
-*.sln.DotSettings.user
-
-# Mac
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-Icon?
-ehthumbs.db
-Thumbs.db
+# Unity Archives
+*.unitypackage

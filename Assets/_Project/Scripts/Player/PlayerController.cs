@@ -13,6 +13,10 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 1.0f;
     public float gravityValue = -9.81f;
     public float pushPower = 2.0f;
+    // Propriedade pública para que outros scripts (como a IA) possam ler a velocidade
+    public Vector3 CurrentVelocity { get; private set; }
+
+    public bool podeMover = true;
 
     // --- CÂMERA E CONTROLES ---
     private PlayerControls playerControls;
@@ -27,7 +31,7 @@ public class PlayerController : MonoBehaviour
     public Transform pickupZoneCenter;
     public float pickupRange = 1f;
     public Vector2 pickupAreaSize = new Vector2(1f, 2f);
-    public LayerMask pickupLayer; 
+    public LayerMask pickupLayer;
     public GameObject heldFlashlightObject;
     public Transform heldFlashlightVisuals;
     public GameObject worldFlashlightPrefab;
@@ -61,7 +65,7 @@ public class PlayerController : MonoBehaviour
         playerControls.Player.ToggleFlashlight.performed += ctx => ToggleFlashlight();
         playerControls.Player.Drop.performed += ctx => DropItem();
     }
-    
+
     private void OnDisable()
     {
         playerControls.Player.Disable();
@@ -69,9 +73,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        HandleMovement();
-        HandleLook();
-        HandleInteractionHighlight();
+        if (podeMover)
+        {
+            HandleMovement();
+            HandleLook();
+            HandleInteractionHighlight();
+        }
     }
 
     void HandleMovement()
@@ -86,8 +93,16 @@ public class PlayerController : MonoBehaviour
         currentSpeed = isSprinting ? sprintSpeed : playerSpeed;
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // Aplica o pulo (se houver lógica de pulo aqui)
+        // ...
+
         playerVelocity.y += gravityValue * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
+
+        // --- LINHA ADICIONADA ---
+        // Atualiza a propriedade pública com a velocidade real do CharacterController.
+        CurrentVelocity = controller.velocity;
     }
 
     void HandleLook()
@@ -116,10 +131,10 @@ public class PlayerController : MonoBehaviour
             transform.Rotate(Vector3.up * mouseX);
         }
     }
-    
+
     private void HandleInteractionHighlight()
     {
-        if (hasFlashlight) 
+        if (hasFlashlight)
         {
             if (lastHighlightedItem != null)
             {
@@ -128,7 +143,7 @@ public class PlayerController : MonoBehaviour
             }
             return;
         }
-        
+
         Vector3 boxCenter = pickupZoneCenter.position;
         Vector3 halfExtents = new Vector3(pickupAreaSize.x / 2, pickupAreaSize.y / 2, pickupRange / 2);
         Collider[] colliders = Physics.OverlapBox(boxCenter, halfExtents, pickupZoneCenter.rotation, pickupLayer);
@@ -164,13 +179,25 @@ public class PlayerController : MonoBehaviour
             {
                 closestItem.Highlight();
             }
-            
+
             lastHighlightedItem = closestItem;
         }
     }
 
     private void Interact()
     {
+        Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, 3f))
+        {
+            if (hit.collider.CompareTag("PortaFinal"))
+            {
+                FecharJogo();
+                return;
+            }
+        }
+
         if (lastHighlightedItem != null)
         {
             PickupFlashlight(lastHighlightedItem);
@@ -216,7 +243,7 @@ public class PlayerController : MonoBehaviour
         Rigidbody rb = droppedFlashlightObject.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = false; 
+            rb.isKinematic = false;
             if (controller != null)
             {
                 rb.linearVelocity = controller.velocity;
@@ -238,14 +265,24 @@ public class PlayerController : MonoBehaviour
         Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
         body.linearVelocity = pushDir * pushPower;
     }
-    
+
     void OnDrawGizmosSelected()
     {
         if (pickupZoneCenter == null) return;
 
         Gizmos.color = new Color(0, 1, 0, 0.5f);
         Gizmos.matrix = Matrix4x4.TRS(pickupZoneCenter.position, pickupZoneCenter.rotation, Vector3.one);
-        Vector3 boxSize = new Vector3(pickupAreaSize.x, pickupAreaSize.y, pickupRange);  
+        Vector3 boxSize = new Vector3(pickupAreaSize.x, pickupAreaSize.y, pickupRange);
         Gizmos.DrawWireCube(Vector3.zero, boxSize);
+    }
+
+    private void FecharJogo()
+    {
+        Debug.Log("Porta final encontrada! Fechando o jogo...");
+        Application.Quit();
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }

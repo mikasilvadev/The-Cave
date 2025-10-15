@@ -50,12 +50,18 @@
     <Analyzer Include="C:\UnityPasta\Meus projetos\Jogo de Terror\O jogo mais assustador do Mundo\Library\PackageCache\com.unity.dt.app-ui@7b87c8225c06\Runtime\SourceGenerators\netstandard2.0\EnumToLowerCase.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\States\InvestigateState.cs" />
     <Compile Include="Assets\_Project\Scripts\Player\PlayerController.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\AIController.cs" />
     <Compile Include="Assets\_Project\Scripts\Player\FlashlightItem.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\States\SearchState.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\States\BaseState.cs" />
+    <Compile Include="Assets\_Project\Scripts\Core\CutsceneEvents.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\States\WanderState.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
     <Compile Include="Assets\_Project\Input\InputActions\PlayerControls.cs" />
-    <Compile Include="Assets\_Project\Scripts\AI\Andarilho\MonstroAI.cs" />
-    <Compile Include="Assets\_Project\Scripts\AI\Andarilho\HeadLookController.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\States\ChaseState.cs" />
+    <Compile Include="Assets\_Project\Scripts\AI\Sorriso\MonsterSenses.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Realistic Rock\Shaders\Rock.shader" />
