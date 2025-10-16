@@ -39,7 +39,8 @@ public class FlashlightItem : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void OnDrop()
+    // A função será desativada.
+    /* public void OnDrop()
     {
         StartCoroutine(EnablePickupAfterDelay(pickupDelay));
     }
@@ -52,6 +53,7 @@ public class FlashlightItem : MonoBehaviour
 
         canBePickedUp = true;
     }
+    */
 
     public void Highlight()
     {

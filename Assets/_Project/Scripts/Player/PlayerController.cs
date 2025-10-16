@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     public Vector3 CurrentVelocity { get; private set; }
 
     public bool IsRunning { get; private set; }
+    public bool IsMoving { get; private set; }
 
     public bool podeMover = true;
 
@@ -60,7 +61,8 @@ public class PlayerController : MonoBehaviour
         playerControls.Player.Enable();
         playerControls.Player.Interact.performed += ctx => Interact();
         playerControls.Player.ToggleFlashlight.performed += ctx => ToggleFlashlight();
-        playerControls.Player.Drop.performed += ctx => DropItem();
+        // LINHA REMOVIDA: A linha abaixo era a que conectava o botão de drop à função.
+        // playerControls.Player.Drop.performed += ctx => DropItem();
     }
 
     private void OnDisable()
@@ -88,11 +90,13 @@ public class PlayerController : MonoBehaviour
 
         moveInput = playerControls.Player.Move.ReadValue<Vector2>();
 
+        IsMoving = moveInput.magnitude > 0.1f;
+
         bool isSprintingInput = playerControls.Player.Sprint.IsPressed();
 
         currentSpeed = isSprintingInput ? sprintSpeed : playerSpeed;
 
-        IsRunning = isSprintingInput && moveInput.magnitude > 0.1f;
+        IsRunning = isSprintingInput && IsMoving;
 
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * currentSpeed * Time.deltaTime);
@@ -216,6 +220,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // MÉTODO REMOVIDO: A função será desativada.
+    /*
     private void DropItem()
     {
         if (worldFlashlightPrefab == null)
@@ -243,14 +249,16 @@ public class PlayerController : MonoBehaviour
             {
                 rb.linearVelocity = controller.velocity;
             }
-        }
+        } 
+        
 
-        FlashlightItem itemScript = droppedFlashlightObject.GetComponent<FlashlightItem>();
+    FlashlightItem itemScript = droppedFlashlightObject.GetComponent<FlashlightItem>();
         if (itemScript != null)
         {
             itemScript.OnDrop();
         }
     }
+    */
 
     void OnControllerColliderHit(ControllerColliderHit hit)
     {

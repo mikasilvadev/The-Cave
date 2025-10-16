@@ -19,6 +19,10 @@ public class AIController : MonoBehaviour
 
     [Header("Configurações de Movimento")]
     public float wanderSpeed = 2f;
+    [Tooltip("O tempo mínimo que o monstro ficará parado entre os passeios.")]
+    public float minWanderIdleTime = 3.0f;
+    [Tooltip("O tempo máximo que o monstro ficará parado entre os passeios.")]
+    public float maxWanderIdleTime = 7.0f;
     public float chaseSpeed = 5f;
     public float searchSpeed = 3.5f;
     public float chaseRotationSpeed = 5f;
@@ -88,18 +92,26 @@ public class AIController : MonoBehaviour
             }
         }
 
-        if (!(currentState is InvestigateState))
+        if (!(currentState is InvestigateState) && !(currentState is ChaseState))
         {
             if (Senses.CheckForSound(out Vector3 soundPos))
             {
                 if (Vector3.Distance(transform.position, soundPos) > 1.5f)
                 {
                     Debug.Log("AIController: OUVIU SOM! Mudando para InvestigateState.", this.gameObject);
-                    LastHeardSoundPosition = soundPos;
-
-                    ChangeState(new InvestigateState(soundPos));
+                    ChangeState(new InvestigateState(soundPos, "som"));
                     return;
                 }
+            }
+        }
+
+        if (currentState is WanderState || currentState is SearchState)
+        {
+            if (Senses.CanSeeFlashlightBeam(out Vector3 lightPos))
+            {
+                Debug.Log("AIController: VIU O FOCO DE LUZ! Mudando para InvestigateState.", this.gameObject);
+                ChangeState(new InvestigateState(lightPos, "foco de luz"));
+                return;
             }
         }
 

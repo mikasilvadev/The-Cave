@@ -2,15 +2,18 @@ using UnityEngine;
 
 public class ChaseState : BaseState
 {
-    private float catchDistance = 1.8f;
+    private float catchDistance = 0.5f;
+    private float pathUpdateInterval = 0.25f;
+    private float pathUpdateTimer;
 
     public override void Enter(AIController controller)
     {
         Debug.Log("<color=red>CHASE:</color> Iniciando perseguição!", controller.gameObject);
         controller.Agent.speed = controller.chaseSpeed;
         controller.Agent.stoppingDistance = catchDistance;
-
         controller.Agent.updateRotation = false;
+
+        pathUpdateTimer = 0f;
     }
 
     public override void Execute(AIController controller)
@@ -20,14 +23,18 @@ public class ChaseState : BaseState
 
         if (controller.Senses.CanSeePlayer(out Vector3 playerPos))
         {
-            controller.Agent.stoppingDistance = catchDistance;
-            controller.Agent.SetDestination(playerPos);
+            pathUpdateTimer -= Time.deltaTime;
+            if (pathUpdateTimer <= 0f)
+            {
+                controller.Agent.SetDestination(playerPos);
+                pathUpdateTimer = pathUpdateInterval;
+            }
+
             controller.LastKnownPlayerPosition = playerPos;
             controller.LastKnownPlayerVelocity = controller.PlayerController.CurrentVelocity;
 
             Vector3 directionToPlayer = (playerPos - controller.transform.position).normalized;
             Quaternion targetRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
-
             controller.transform.rotation = Quaternion.Slerp(
                 controller.transform.rotation,
                 targetRotation,
@@ -37,13 +44,9 @@ public class ChaseState : BaseState
             if (Vector3.Distance(controller.transform.position, playerPos) < catchDistance)
             {
                 Debug.LogError("CHASE: O JOGADOR FOI PEGO! REINICIANDO O JOGO.", controller.gameObject);
-
                 controller.Agent.isStopped = true;
-
                 controller.gameObject.SetActive(false);
-
                 controller.GameOverAndRestart();
-
                 return;
             }
         }
@@ -61,8 +64,7 @@ public class ChaseState : BaseState
                 if (!controller.Agent.pathPending && controller.Agent.remainingDistance <= controller.Agent.stoppingDistance)
                 {
                     Debug.Log("CHASE: Chegou à distância de parada. Mudando para InvestigateState para seguir o som.", controller.gameObject);
-
-                    controller.ChangeState(new InvestigateState(soundPos));
+                    controller.ChangeState(new InvestigateState(soundPos, "som no escuro"));
                 }
             }
             else

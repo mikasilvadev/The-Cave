@@ -27200,12 +27200,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIController
   wanderSpeed: 8
+  minWanderIdleTime: 3
+  maxWanderIdleTime: 7
   chaseSpeed: 14
   searchSpeed: 3.5
   chaseRotationSpeed: 30
   investigateRotationSpeed: 3
-  darkStopDistance: 3
-  soundStopDistance: 1
+  darkStopDistance: 6
+  soundStopDistance: 6
   wanderAnimSpeed: 1
   chaseAnimSpeed: 2.3
   searchAnimSpeed: 1.2
@@ -27231,6 +27233,10 @@ MonoBehaviour:
   visionMask:
     serializedVersion: 2
     m_Bits: 72
+  lightDetectionDistance: 30
+  lightDetectionAngle: 120
+  lightDetectionRayCount: 7
+  lightDetectionSpread: 40
   baseHearingRadius: 15
   runningSoundMultiplier: 1.5
 --- !u!95 &1163097750
@@ -27509,6 +27515,10 @@ PrefabInstance:
     - target: {fileID: 507252678238837130, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 2002673086986983718, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3015818255179145264, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
       propertyPath: m_Enabled
@@ -30441,6 +30451,10 @@ PrefabInstance:
     - target: {fileID: 2358286497816136436, guid: 8381ddbc1c0dff64e8076d15d9bbcbc1, type: 3}
       propertyPath: m_Name
       value: Lanterna_Coletavel
+      objectReference: {fileID: 0}
+    - target: {fileID: 2358286497816136436, guid: 8381ddbc1c0dff64e8076d15d9bbcbc1, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2358286497816136436, guid: 8381ddbc1c0dff64e8076d15d9bbcbc1, type: 3}
       propertyPath: m_TagString
