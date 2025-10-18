@@ -101,6 +101,11 @@ public class PlayerController : MonoBehaviour
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
         controller.Move(move * currentSpeed * Time.deltaTime);
 
+        playerVelocity.y += gravityValue * Time.deltaTime;
+
+        controller.Move(playerVelocity * Time.deltaTime);
+
+
         CurrentVelocity = controller.velocity;
     }
 

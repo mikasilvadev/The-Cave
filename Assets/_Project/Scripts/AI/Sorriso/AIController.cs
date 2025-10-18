@@ -17,37 +17,36 @@ public class AIController : MonoBehaviour
     public Animator Animator { get; private set; }
     public MonsterAudio MonsterAudio { get; private set; }
 
+    [Header("Componentes de UI")]
+    public ScreenFader screenFader;
+
     [Header("Configurações de Movimento")]
     public float wanderSpeed = 2f;
-    [Tooltip("O tempo mínimo que o monstro ficará parado entre os passeios.")]
     public float minWanderIdleTime = 3.0f;
-    [Tooltip("O tempo máximo que o monstro ficará parado entre os passeios.")]
     public float maxWanderIdleTime = 7.0f;
-    public float chaseSpeed = 5f;
+    public float chaseSpeed = 7f;
     public float searchSpeed = 3.5f;
-    public float chaseRotationSpeed = 5f;
-
+    public float chaseRotationSpeed = 10f;
     public float investigateRotationSpeed = 3f;
 
     [Header("Configurações de Parada")]
-    [Tooltip("Distância de parada no modo Chase ao perder a visão no escuro.")]
     public float darkStopDistance = 2.0f;
-
-    [Tooltip("Distância de parada ao investigar a origem de um som.")]
     public float soundStopDistance = 1.0f;
 
-    [Header("Velocidades da Animação")]
-    public float wanderAnimSpeed = 1.0f;
-    public float chaseAnimSpeed = 1.5f;
-    public float searchAnimSpeed = 1.2f;
+    [Header("Configurações da Investida (Lunge)")]
+    public float lungeDistance = 3f;
+    public float lungeSpeed = 12f;
+    public float lungeAcceleration = 30f;
+
+    [Header("Configurações de Animação")]
+    [Tooltip("Multiplicador geral da velocidade da animação para ajustar o visual da corrida.")]
+    public float animationSpeedMultiplier = 1.2f;
 
     [Header("Configurações de Fim de Jogo")]
-    [Tooltip("Tempo que a tela fica preta/fadeout antes de recarregar a cena (simula cutscene).")]
-    public float restartFadeTime = 2.0f;
+    public float restartFadeTime = 4.0f;
 
     [Header("Configurações de Perseguição")]
     public float predictionDistance = 6f;
-
     [Tooltip("Quantos segundos no futuro o monstro deve 'prever' a posição do jogador.")]
     public float predictionTime = 1.5f;
 
@@ -56,10 +55,9 @@ public class AIController : MonoBehaviour
     private string currentStateName;
 
     private BaseState currentState;
-
+    private bool isGameOver = false;
     public Vector3 LastKnownPlayerVelocity { get; set; }
     public Vector3 LastKnownPlayerPosition { get; set; }
-    public Vector3 LastHeardSoundPosition { get; set; }
 
     void Awake()
     {
@@ -67,7 +65,6 @@ public class AIController : MonoBehaviour
         Senses = GetComponent<MonsterSenses>();
         Animator = GetComponent<Animator>();
         MonsterAudio = GetComponent<MonsterAudio>();
-
         GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
         Player = playerObject.transform;
         PlayerController = playerObject.GetComponent<PlayerController>();
@@ -80,16 +77,34 @@ public class AIController : MonoBehaviour
 
     void Update()
     {
-        if (Senses.playerFlashlight != null && MonsterAudio != null)
+        if (isGameOver)
         {
-            if (Senses.playerFlashlight.enabled)
+            return;
+        }
+
+        if (!Senses.playerFlashlight.enabled)
+        {
+            if (Agent.enabled && !Agent.isStopped)
             {
-                MonsterAudio.EnableSound();
+                Agent.isStopped = true;
+                Animator.SetFloat("Speed", 0);
+                Animator.speed = 1f;
             }
-            else
+            return;
+        }
+        else
+        {
+            if (Agent.enabled && Agent.isStopped)
             {
-                MonsterAudio.DisableSound();
+                Agent.isStopped = false;
             }
+        }
+
+        if (Senses.IsPlayerShiningLightOnMe(out Vector3 playerPos))
+        {
+            Debug.LogWarning("AIController: FUI ILUMINADO DIRETAMENTE! MUDANDO PARA CHASESTATE!", this.gameObject);
+            ChangeState(new ChaseState());
+            return;
         }
 
         if (!(currentState is InvestigateState) && !(currentState is ChaseState))
@@ -119,69 +134,57 @@ public class AIController : MonoBehaviour
         {
             currentState.Execute(this);
         }
+        UpdateAnimator();
+    }
 
+    private void UpdateAnimator()
+    {
         if (Agent.enabled && Animator != null)
         {
-            float currentVelocity = Agent.velocity.magnitude;
-            Animator.SetFloat("Speed", currentVelocity);
+            float worldSpeed = Agent.velocity.magnitude;
+            float maxSpeed = Agent.speed;
+            float normalizedSpeed = maxSpeed > 0 ? worldSpeed / maxSpeed : 0;
+            Animator.SetFloat("Speed", normalizedSpeed);
+            Animator.speed = (worldSpeed > 0.1f) ? animationSpeedMultiplier : 1f;
         }
     }
 
     public void ChangeState(BaseState newState)
     {
         Debug.Log($"<color=orange>STATE CHANGE:</color> De <color=yellow>{currentState?.GetType().Name ?? "NULL"}</color> para <color=green>{newState.GetType().Name}</color>", this.gameObject);
-
-        if (currentState != null)
-        {
-            currentState.Exit(this);
-        }
-
+        if (currentState != null) currentState.Exit(this);
         currentState = newState;
-        currentStateName = newState.GetType().Name;
-
         currentState.Enter(this);
-
-        if (newState is WanderState)
-        {
-            Animator.speed = wanderAnimSpeed;
-        }
-        else if (newState is ChaseState)
-        {
-            Animator.speed = chaseAnimSpeed;
-        }
-        else if (newState is SearchState || newState is InvestigateState)
-        {
-            Animator.speed = searchAnimSpeed;
-        }
     }
 
     public void GameOverAndRestart()
     {
+        isGameOver = true;
+        Debug.Log("Iniciando GameOverAndRestart...");
+        if (screenFader != null)
+        {
+            screenFader.FadeToBlackInstant();
+        }
+        MonsterAudio.StopAllSounds();
+        Animator.enabled = false;
         if (Agent.enabled)
         {
             Agent.isStopped = true;
             Agent.enabled = false;
         }
-
         if (PlayerController != null)
         {
             PlayerController.podeMover = false;
         }
-
         StartCoroutine(FadeAndReloadScene(restartFadeTime));
     }
 
     private IEnumerator FadeAndReloadScene(float delay)
     {
-
         Debug.Log($"GAME OVER! Iniciando fade ({delay}s) antes de recarregar.");
-
         yield return new WaitForSeconds(delay);
-
         string sceneToLoad = SceneManager.GetActiveScene().name;
-
         Debug.Log($"Recarregando a cena: {sceneToLoad}");
-
         SceneManager.LoadScene(sceneToLoad);
     }
 }

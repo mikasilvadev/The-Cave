@@ -28,6 +28,12 @@ public class MonsterAudio : MonoBehaviour
         audioSource.PlayOneShot(clip);
     }
 
+    public void StopAllSounds()
+    {
+        audioSource.Stop();
+        audioSource.enabled = false;
+    }
+
     public void StartMovingSound()
     {
         if (movingClip != null && !audioSource.isPlaying)

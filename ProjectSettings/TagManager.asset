@@ -9,6 +9,7 @@ TagManager:
   - PlayerLightSource
   - SearchPoint
   - HidingSpot
+  - Monster
   layers:
   - Default
   - TransparentFX

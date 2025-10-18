@@ -1235,8 +1235,6 @@ GameObject:
   - component: {fileID: 2430487599585796444}
   - component: {fileID: 6464622766618946845}
   - component: {fileID: 2833541752570182769}
-  - component: {fileID: 8959671623559953933}
-  - component: {fileID: 2921344008624049533}
   m_Layer: 0
   m_Name: Andarilho
   m_TagString: Untagged
@@ -1307,52 +1305,6 @@ NavMeshAgent:
   m_BaseOffset: 1
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &8959671623559953933
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4276746937949932524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5bcf569741a5a5249addbc7017e594d8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WanderingAI
-  playerTransform: {fileID: 0}
-  eyeTransform: {fileID: 2984722294767482960}
-  patrolSpeed: 4
-  wanderSpeed: 4
-  chaseSpeed: 8
-  turningSensitivity: 80
-  fixationDistance: 5
-  fixationTurnSpeed: 10
-  sightDistance: 60
-  fieldOfViewAngle: 150
-  detectionLayers:
-    serializedVersion: 2
-    m_Bits: 72
-  hearingDistance: 25
-  playerRunningSpeedThreshold: 5
-  wanderRadius: 10
-  waitTimeAtDestination: 2
-  chaseGracePeriod: 0.5
-  learnedHotSpotsMemory: 5
-  pathProjectionTime: 2
-  hidingSpotSearchRadius: 15
-  patrolPoints: []
---- !u!114 &2921344008624049533
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4276746937949932524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae24b42fd02c77a4a8f059bfe5cb70fd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NavMeshAnimatorLink
 --- !u!1 &4368397447601756903
 GameObject:
   m_ObjectHideFlags: 0
@@ -1742,7 +1694,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8128959231842811049}
-  - component: {fileID: 2569373033537846648}
   m_Layer: 0
   m_Name: Cabeca
   m_TagString: Untagged
@@ -1769,20 +1720,6 @@ Transform:
   - {fileID: 7556420740225510078}
   m_Father: {fileID: 2430487599585796444}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2569373033537846648
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6412231150225259921}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c6d392a7bf411545b5461e6118dcb66, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HeadLookController
-  lookSpeed: 5
-  maxAngle: 80
 --- !u!1 &6490455310978153420
 GameObject:
   m_ObjectHideFlags: 0
