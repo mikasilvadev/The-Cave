@@ -2849,6 +2849,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.030301455
       objectReference: {fileID: 0}
+    - target: {fileID: 2833541752570182769, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
+      propertyPath: m_Acceleration
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 2937216757831614480, guid: cd4b6b0ee5d7f1a43ae444901d46d8a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.936011e-10
@@ -27218,14 +27222,11 @@ MonoBehaviour:
   searchSpeed: 4
   chaseRotationSpeed: 15
   investigateRotationSpeed: 3
-  darkStopDistance: 7
   soundStopDistance: 7
   lungeDistance: 3
   lungeSpeed: 18
-  lungeAcceleration: 50
   animationSpeedMultiplier: 2
   restartFadeTime: 2
-  predictionDistance: 6
   predictionTime: 1.5
   currentStateName: 
 --- !u!114 &1163097747
@@ -27241,16 +27242,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSenses
   playerFlashlight: {fileID: 1543002648}
-  playerFlashlightComponent: {fileID: 0}
   visionAngle: 110
   visionDistance: 20
   visionMask:
     serializedVersion: 2
     m_Bits: 72
-  lightDetectionDistance: 30
-  lightDetectionAngle: 120
-  lightDetectionRayCount: 7
-  lightDetectionSpread: 62
+  lightDetectionDistance: 70
+  lightDetectionAngle: 150
   baseHearingRadius: 15
   runningSoundMultiplier: 1.5
 --- !u!95 &1163097750
@@ -27649,6 +27647,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4441705975755600363, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1214979130}
+    - targetCorrespondingSourceObject: {fileID: 2002673086986983718, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2122024686}
   m_SourcePrefab: {fileID: 100100000, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
 --- !u!4 &1369050248 stripped
 Transform:
@@ -28919,6 +28920,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 797004d35fe5cf349bc3dacc371ed2e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCaptureZone
+--- !u!1 &2122024683 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2002673086986983718, guid: f18c117c01cb2c54dbf7410ac8c0d0b4, type: 3}
+  m_PrefabInstance: {fileID: 1362871730}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2122024686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122024683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67ac41661d96db3438357308dcf9dcba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlashlightBeamSensor
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 64
+  numRays: 15
+  pointsPerRay: 35
+  raySpacing: 2
 --- !u!1001 &3506646577205086113
 PrefabInstance:
   m_ObjectHideFlags: 0
