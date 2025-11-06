@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 3169027257520970819}
   - component: {fileID: 2255634721211348727}
   - component: {fileID: 3293367263357141465}
-  - component: {fileID: 2476761360564349250}
   m_Layer: 7
   m_Name: Lanterna_Coletavel
   m_TagString: Interactable
@@ -86,21 +85,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &2476761360564349250
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2358286497816136436}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 144c121afcd30d042b217049e396ddd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FlashlightItem
-  pickupDelay: 1.5
-  highlightMaterial: {fileID: 2100000, guid: d8414c7d8e872254ca3a6072ea9a2013, type: 2}
-  canBePickedUp: 1
 --- !u!1 &2509990851879040114
 GameObject:
   m_ObjectHideFlags: 0
