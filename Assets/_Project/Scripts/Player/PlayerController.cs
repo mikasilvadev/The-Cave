@@ -4,7 +4,6 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    // --- VARIÁVEIS DE MOVIMENTO ---
     private CharacterController controller;
     private Vector3 playerVelocity;
     private bool groundedPlayer;
@@ -19,12 +18,10 @@ public class PlayerController : MonoBehaviour
     public bool IsMoving { get; private set; }
     public bool podeMover = true;
 
-    // --- VARIÁVEIS DE CÂMERA ---
     [Header("Câmera e Rotação")]
     public Transform cameraTransform;
-    public float sensitivityMultiplier = 10.0f; // Nosso multiplicador
-    public float mouseSensitivity = 5.0f; // Este valor virá do SettingsManager
-    [Tooltip("Ângulo vertical final (em graus) após a trava. 0 = reto, 10 = olhando um pouco para baixo")]
+    public float sensitivityMultiplier = 10.0f;
+    public float mouseSensitivity = 5.0f;
     public float anguloDeTravaFinal = 5f;
     private float xRotation = 0f;
     private bool isVerticalLookLocked = false;
@@ -33,7 +30,6 @@ public class PlayerController : MonoBehaviour
     public float defaultMaxLookDown = 60f;
     public float defaultMaxLookUp = 0f;
 
-    // --- VARIÁVEIS DE INTERAÇÃO ---
     [Header("Lanterna e Interação")]
     public Transform pickupZoneCenter;
     public float pickupRange = 1f;
@@ -47,27 +43,18 @@ public class PlayerController : MonoBehaviour
     private Light heldFlashlightLight;
     private FlashlightItem lastHighlightedItem = null;
     private HighlightableObject portaSendoDestacada = null;
-
-    // --- OUTRAS VARIÁVEIS ---
-    [Header("Rotação da Lanterna")]
     private Transform activeFlashlightTransform;
     public float maxFlashlightAngle = 25f;
     private float flashlightYaw = 0f;
-    [Header("Áudio da Lanterna")]
     public AudioSource flashlightAudioSource;
     public AudioClip flashlightOnClip;
     public AudioClip flashlightOffClip;
     private float interactionHighlightTimer;
     private const float INTERACTION_HIGHLIGHT_INTERVAL = 0.1f;
     private Coroutine pickupCoroutine;
-
-    // --- MUDANÇA (REFERÊNCIAS DE INPUT) ---
-    private InputActionMap playerMap;
     private InputAction moveAction;
     private InputAction lookAction;
     private InputAction sprintAction;
-    private InputAction interactAction;
-    private InputAction flashlightAction;
 
     [Header("Nomes das Ações (EXATOS do Input Asset)")]
     [SerializeField] private string moveActionName = "Move";
@@ -75,68 +62,75 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private string sprintActionName = "Sprint";
     [SerializeField] private string interactActionName = "Interact";
     [SerializeField] private string flashlightActionName = "ToggleFlashlight";
-    // --- FIM DA MUDANÇA ---
 
-    private void Awake()
+    void Awake()
     {
         controller = GetComponent<CharacterController>();
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        if (heldFlashlightObject != null)
-        {
-            heldFlashlightObject.SetActive(false);
-        }
-
-        // --- MUDANÇA (PEGANDO INPUTS DO SETTINGS MANAGER) ---
-        if (SettingsManager.Instance == null || SettingsManager.Instance.playerActions == null)
-        {
-            Debug.LogError("PlayerController: SettingsManager ou PlayerActions não encontrados! Keybinds não funcionarão.", this);
-            podeMover = false;
-            return;
-        }
-        playerMap = SettingsManager.Instance.playerActions.FindActionMap("Player");
-        if (playerMap == null)
-        {
-            Debug.LogError("PlayerController: Não foi possível encontrar o Action Map 'Player' no Asset do SettingsManager!", this);
-            podeMover = false;
-            return;
-        }
-        moveAction = playerMap.FindAction(moveActionName);
-        lookAction = playerMap.FindAction(lookActionName);
-        sprintAction = playerMap.FindAction(sprintActionName);
-        interactAction = playerMap.FindAction(interactActionName);
-        flashlightAction = playerMap.FindAction(flashlightActionName);
-        interactAction.performed += Interact;
-        flashlightAction.performed += ToggleFlashlight;
-        // --- FIM DA MUDANÇA ---
-
+        if (heldFlashlightObject != null) heldFlashlightObject.SetActive(false);
         currentMaxLookDown = defaultMaxLookDown;
         currentMaxLookUp = defaultMaxLookUp;
-        mouseSensitivity = SettingsManager.Instance.GetSensitivity();
-        SettingsManager.OnSensitivityChanged += HandleSensitivityChanged;
+    }
+
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        InitializeBasicInputs();
+        if (SettingsManager.Instance != null)
+        {
+            mouseSensitivity = SettingsManager.Instance.GetSensitivity();
+            SettingsManager.OnSensitivityChanged += HandleSensitivityChanged;
+        }
         GameManager.OnGameOver += HandleGameOver;
+        StartCoroutine(KickstartControls());
     }
 
-    private void OnEnable()
+    private IEnumerator KickstartControls()
     {
-        playerMap?.Enable();
+        yield return new WaitForSeconds(2.0f);
+        if (SettingsManager.Instance != null && SettingsManager.Instance.playerActions != null)
+        {
+            SettingsManager.Instance.playerActions.FindActionMap("Player").Disable();
+            yield return null;
+            SettingsManager.Instance.playerActions.FindActionMap("Player").Enable();
+        }
     }
 
-    private void OnDisable()
+    private void InitializeBasicInputs()
     {
-        playerMap?.Disable();
-    }
-
-    private void HandleSensitivityChanged(float newSensitivity)
-    {
-        mouseSensitivity = newSensitivity;
+        if (SettingsManager.Instance == null || SettingsManager.Instance.playerActions == null) return;
+        var map = SettingsManager.Instance.playerActions.FindActionMap("Player");
+        if (map != null)
+        {
+            moveAction = map.FindAction(moveActionName);
+            lookAction = map.FindAction(lookActionName);
+            sprintAction = map.FindAction(sprintActionName);
+            map.Enable();
+        }
     }
 
     void Update()
     {
-        if (!podeMover || playerMap == null) return;
+        if (!podeMover) return;
+
         HandleMovement();
         HandleLook();
+
+        if (SettingsManager.Instance != null && SettingsManager.Instance.playerActions != null)
+        {
+            InputAction interact = SettingsManager.Instance.playerActions.FindAction(interactActionName);
+            if (interact != null && (interact.WasPerformedThisFrame() || interact.WasPressedThisFrame()))
+            {
+                TryInteract();
+            }
+
+            InputAction flashlight = SettingsManager.Instance.playerActions.FindAction(flashlightActionName);
+            if (flashlight != null && flashlight.WasPerformedThisFrame())
+            {
+                TryToggleFlashlight();
+            }
+        }
+
         interactionHighlightTimer += Time.deltaTime;
         if (interactionHighlightTimer >= INTERACTION_HIGHLIGHT_INTERVAL)
         {
@@ -148,15 +142,17 @@ public class PlayerController : MonoBehaviour
     void HandleMovement()
     {
         groundedPlayer = controller.isGrounded;
-        if (groundedPlayer && playerVelocity.y < 0)
-            playerVelocity.y = 0f;
-        Vector2 moveInput = moveAction.ReadValue<Vector2>();
-        IsMoving = moveInput.magnitude > 0.1f;
-        bool isSprintingInput = sprintAction.IsPressed();
-        currentSpeed = isSprintingInput ? sprintSpeed : playerSpeed;
-        IsRunning = isSprintingInput && IsMoving;
-        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
-        controller.Move(move * currentSpeed * Time.deltaTime);
+        if (groundedPlayer && playerVelocity.y < 0) playerVelocity.y = 0f;
+        if (moveAction != null)
+        {
+            Vector2 moveInput = moveAction.ReadValue<Vector2>();
+            IsMoving = moveInput.magnitude > 0.1f;
+            bool isSprintingInput = sprintAction != null && sprintAction.IsPressed();
+            currentSpeed = isSprintingInput ? sprintSpeed : playerSpeed;
+            IsRunning = isSprintingInput && IsMoving;
+            Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+            controller.Move(move * currentSpeed * Time.deltaTime);
+        }
         playerVelocity.y += gravityValue * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
         CurrentVelocity = controller.velocity;
@@ -164,16 +160,16 @@ public class PlayerController : MonoBehaviour
 
     void HandleLook()
     {
+        if (lookAction == null) return;
         Vector2 lookInput = lookAction.ReadValue<Vector2>();
-        float finalSensitivity = mouseSensitivity * sensitivityMultiplier;
-        float mouseX = lookInput.x * finalSensitivity * Time.deltaTime;
-        float mouseY = lookInput.y * finalSensitivity * Time.deltaTime;
+        float finalSens = mouseSensitivity * sensitivityMultiplier;
+        float mouseX = lookInput.x * finalSens * Time.deltaTime;
+        float mouseY = lookInput.y * finalSens * Time.deltaTime;
 
         if (hasFlashlight && isVerticalLookLocked)
         {
             xRotation = anguloDeTravaFinal;
-            currentMaxLookUp = anguloDeTravaFinal;
-            currentMaxLookDown = anguloDeTravaFinal;
+            currentMaxLookUp = anguloDeTravaFinal; currentMaxLookDown = anguloDeTravaFinal;
         }
         else
         {
@@ -181,31 +177,23 @@ public class PlayerController : MonoBehaviour
             if (hasFlashlight)
             {
                 currentMaxLookUp = defaultMaxLookUp;
-                if (xRotation < currentMaxLookDown)
-                {
-                    currentMaxLookDown = xRotation;
-                }
+                if (xRotation < currentMaxLookDown) currentMaxLookDown = xRotation;
                 if (currentMaxLookDown <= anguloDeTravaFinal)
                 {
-                    isVerticalLookLocked = true;
-                    currentMaxLookDown = anguloDeTravaFinal;
-                    xRotation = anguloDeTravaFinal;
+                    isVerticalLookLocked = true; currentMaxLookDown = anguloDeTravaFinal; xRotation = anguloDeTravaFinal;
                 }
             }
             else
             {
-                currentMaxLookUp = defaultMaxLookUp;
-                currentMaxLookDown = defaultMaxLookDown;
+                currentMaxLookUp = defaultMaxLookUp; currentMaxLookDown = defaultMaxLookDown;
             }
             xRotation = Mathf.Clamp(xRotation, currentMaxLookUp, currentMaxLookDown);
         }
         cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         if (activeFlashlightTransform != null)
         {
-            if (Mathf.Abs(flashlightYaw + mouseX) > maxFlashlightAngle)
-                transform.Rotate(Vector3.up * mouseX);
-            else
-                flashlightYaw += mouseX;
+            if (Mathf.Abs(flashlightYaw + mouseX) > maxFlashlightAngle) transform.Rotate(Vector3.up * mouseX);
+            else flashlightYaw += mouseX;
             activeFlashlightTransform.localRotation = Quaternion.Euler(0f, flashlightYaw, 0f);
         }
         else
@@ -216,164 +204,103 @@ public class PlayerController : MonoBehaviour
 
     private void HandleInteractionHighlight()
     {
-        if (InteractionPromptUI.Instance == null) return;
-        bool isLightOn = heldFlashlightLight != null && heldFlashlightLight.enabled;
-        HighlightableObject portaProxima = null;
-        float distanciaMinimaPorta = float.MaxValue;
-        Collider[] portasNaArea = Physics.OverlapSphere(transform.position, distanciaDestaquePortaFinal, portaLayer);
+        if (!hasFlashlight)
+        {
+            Physics.SyncTransforms();
+            Collider[] colliders = Physics.OverlapBox(pickupZoneCenter.position, new Vector3(pickupAreaSize.x / 2, pickupAreaSize.y / 2, pickupRange / 2), pickupZoneCenter.rotation, pickupLayer);
+            FlashlightItem closestItem = null;
+            float closestDist = float.MaxValue;
 
-        foreach (var col in portasNaArea)
-        {
-            if (col.CompareTag("PortaFinal"))
+            foreach (var col in colliders)
             {
-                float dist = Vector3.Distance(transform.position, col.transform.position);
-                if (dist < distanciaMinimaPorta)
+                if (col.CompareTag("Interactable"))
                 {
-                    distanciaMinimaPorta = dist;
-                    portaProxima = col.GetComponent<HighlightableObject>();
-                }
-            }
-        }
-        bool promptMostrado = false;
-        if (portaProxima != null)
-        {
-            if (distanciaMinimaPorta <= distanciaMaximaParaPortaFinal && isLightOn)
-            {
-                InteractionPromptUI.Instance.ShowPrompt(interactActionName, "to Open Door");
-                promptMostrado = true;
-            }
-            else if (isLightOn)
-            {
-                if (portaSendoDestacada != portaProxima)
-                {
-                    if (portaSendoDestacada != null) portaSendoDestacada.RemoveHighlight();
-                    portaSendoDestacada = portaProxima;
-                    portaSendoDestacada.Highlight();
-                }
-            }
-            else
-            {
-                if (portaSendoDestacada != null)
-                {
-                    portaSendoDestacada.RemoveHighlight();
-                    portaSendoDestacada = null;
-                }
-            }
-        }
-        else
-        {
-            if (portaSendoDestacada != null)
-            {
-                portaSendoDestacada.RemoveHighlight();
-                portaSendoDestacada = null;
-            }
-        }
-        if (hasFlashlight)
-        {
-            if (lastHighlightedItem != null)
-            {
-                lastHighlightedItem.RemoveHighlight();
-                lastHighlightedItem = null;
-            }
-            if (!promptMostrado) InteractionPromptUI.Instance.HidePrompt();
-            return;
-        }
-        Vector3 boxCenter = pickupZoneCenter.position;
-        Vector3 halfExtents = new Vector3(pickupAreaSize.x / 2, pickupAreaSize.y / 2, pickupRange / 2);
-        Collider[] colliders = Physics.OverlapBox(boxCenter, halfExtents, pickupZoneCenter.rotation, pickupLayer);
-        FlashlightItem closestItem = null;
-        float closestDistance = float.MaxValue;
-        foreach (var col in colliders)
-        {
-            if (col.CompareTag("Interactable"))
-            {
-                FlashlightItem item = col.GetComponent<FlashlightItem>();
-                if (item != null && item.canBePickedUp)
-                {
-                    float distance = Vector3.Distance(transform.position, col.transform.position);
-                    if (distance < closestDistance)
+                    FlashlightItem item = col.GetComponent<FlashlightItem>();
+                    if (item != null && item.canBePickedUp)
                     {
-                        closestDistance = distance;
-                        closestItem = item;
+                        float d = Vector3.Distance(transform.position, col.transform.position);
+                        if (d < closestDist) { closestDist = d; closestItem = item; }
                     }
                 }
             }
+            if (closestItem != lastHighlightedItem)
+            {
+                if (lastHighlightedItem != null) lastHighlightedItem.RemoveHighlight();
+                if (closestItem != null) closestItem.Highlight();
+                lastHighlightedItem = closestItem;
+            }
+            if (InteractionPromptUI.Instance != null)
+            {
+                if (closestItem != null) InteractionPromptUI.Instance.ShowPrompt(interactActionName, "to Collect");
+                else InteractionPromptUI.Instance.HidePrompt();
+            }
         }
-        if (closestItem != lastHighlightedItem)
+        else if (heldFlashlightLight != null && heldFlashlightLight.enabled)
         {
-            if (lastHighlightedItem != null) lastHighlightedItem.RemoveHighlight();
-            if (closestItem != null) closestItem.Highlight();
-            lastHighlightedItem = closestItem;
-        }
-        if (closestItem != null && !promptMostrado)
-        {
-            InteractionPromptUI.Instance.ShowPrompt(interactActionName, "to Collect");
-            promptMostrado = true;
-        }
-        if (!promptMostrado)
-        {
-            InteractionPromptUI.Instance.HidePrompt();
+            if (lastHighlightedItem != null) { lastHighlightedItem.RemoveHighlight(); lastHighlightedItem = null; }
+
+            Collider[] portas = Physics.OverlapSphere(transform.position, distanciaDestaquePortaFinal, portaLayer);
+            HighlightableObject portaProx = null;
+            float minDist = float.MaxValue;
+
+            foreach (var c in portas) if (c.CompareTag("PortaFinal"))
+                {
+                    float d = Vector3.Distance(transform.position, c.transform.position);
+                    if (d < minDist) { minDist = d; portaProx = c.GetComponent<HighlightableObject>(); }
+                }
+
+            if (portaProx != null && minDist <= distanciaMaximaParaPortaFinal)
+            {
+                GameManager.Instance.TriggerGameWin();
+            }
+            else if (InteractionPromptUI.Instance != null)
+            {
+                InteractionPromptUI.Instance.HidePrompt();
+            }
+
+            if (portaSendoDestacada != portaProx)
+            {
+                if (portaSendoDestacada != null) portaSendoDestacada.RemoveHighlight();
+                portaSendoDestacada = portaProx;
+                if (portaSendoDestacada != null) portaSendoDestacada.Highlight();
+            }
         }
     }
 
-    // --- MUDANÇA (ASSINATURA DO MÉTODO) ---
-    private void Interact(InputAction.CallbackContext context)
+    private void TryInteract()
     {
-        if (InteractionPromptUI.Instance == null) return;
-        if (lastHighlightedItem != null)
+        if (lastHighlightedItem != null && !hasFlashlight)
         {
-            if (pickupCoroutine != null)
-            {
-                StopCoroutine(pickupCoroutine);
-            }
+            if (pickupCoroutine != null) StopCoroutine(pickupCoroutine);
             pickupCoroutine = StartCoroutine(PickupFlashlightRoutine(lastHighlightedItem));
             lastHighlightedItem = null;
-            InteractionPromptUI.Instance.HidePrompt();
-            return;
-        }
-        bool isLightOn = heldFlashlightLight != null && heldFlashlightLight.enabled;
-        if (portaSendoDestacada != null)
-        {
-            float distanceToDoor = Vector3.Distance(transform.position, portaSendoDestacada.transform.position);
-            if (distanceToDoor <= distanciaMaximaParaPortaFinal && isLightOn)
-            {
-                FecharJogo();
-                return;
-            }
+            if (InteractionPromptUI.Instance != null) InteractionPromptUI.Instance.HidePrompt();
         }
     }
 
     private IEnumerator PickupFlashlightRoutine(FlashlightItem item)
     {
         hasFlashlight = true;
+        if (item != null) item.OnPickup();
         heldFlashlightObject.SetActive(true);
         activeFlashlightTransform = heldFlashlightObject.transform;
         heldFlashlightLight = heldFlashlightObject.GetComponentInChildren<Light>();
-        if (heldFlashlightLight == null)
-        {
-            Debug.LogError("PlayerController: Objeto da lanterna não tem um componente 'Light'!");
-        }
-        item.OnPickup();
         MonsterController monster = FindFirstObjectByType<MonsterController>();
-        if (monster != null)
-        {
-            monster.ActivateMonster();
-        }
-        else
-        {
-            Debug.LogWarning("Player não conseguiu encontrar o MonsterController para ativar");
-        }
+        if (monster != null) monster.ActivateMonster();
         if (InteractionPromptUI.Instance != null)
             InteractionPromptUI.Instance.ShowPrompt(flashlightActionName, "to Toggle Flashlight", 5.0f);
         yield return null;
     }
 
-    // --- MUDANÇA (ASSINATURA DO MÉTODO) ---
-    private void ToggleFlashlight(InputAction.CallbackContext context)
+    private void ToggleFlashlight()
+    {
+        TryToggleFlashlight();
+    }
+
+    private void TryToggleFlashlight()
     {
         if (!hasFlashlight || heldFlashlightLight == null) return;
-        if (InteractionPromptUI.Instance != null)
-            InteractionPromptUI.Instance.HidePrompt();
+        if (InteractionPromptUI.Instance != null) InteractionPromptUI.Instance.HidePrompt();
         bool newState = !heldFlashlightLight.enabled;
         heldFlashlightLight.enabled = newState;
         if (flashlightAudioSource != null)
@@ -384,52 +311,18 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnControllerColliderHit(ControllerColliderHit hit)
+    private void HandleSensitivityChanged(float newSens) => mouseSensitivity = newSens;
+    private void HandleGameOver() { podeMover = false; if (controller != null) controller.enabled = false; enabled = false; }
+    void OnDestroy()
     {
-        Rigidbody body = hit.collider.attachedRigidbody;
-        if (body == null || body.isKinematic) return;
-        if (hit.moveDirection.y < -0.3f) return;
-        Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
-        body.linearVelocity = pushDir * pushPower;
+        GameManager.OnGameOver -= HandleGameOver;
+        if (SettingsManager.Instance != null) SettingsManager.OnSensitivityChanged -= HandleSensitivityChanged;
     }
-
     void OnDrawGizmosSelected()
     {
         if (pickupZoneCenter == null) return;
         Gizmos.color = new Color(0, 1, 0, 0.5f);
         Gizmos.matrix = Matrix4x4.TRS(pickupZoneCenter.position, pickupZoneCenter.rotation, Vector3.one);
-        Vector3 boxSize = new Vector3(pickupAreaSize.x, pickupAreaSize.y, pickupRange);
-        Gizmos.DrawWireCube(Vector3.zero, boxSize);
-    }
-
-    private void FecharJogo()
-    {
-        Debug.Log("Porta encontrada, iniciando sequência de vitória");
-        GameManager.Instance.TriggerGameWin();
-    }
-
-    private void HandleGameOver()
-    {
-        Debug.Log("PLAYER: Game Over, congelando.");
-        podeMover = false;
-        if (controller != null)
-            controller.enabled = false;
-        enabled = false;
-    }
-
-    // --- MUDANÇA (LIMPEZA DE EVENTOS) ---
-    void OnDestroy()
-    {
-        GameManager.OnGameOver -= HandleGameOver;
-        SettingsManager.OnSensitivityChanged -= HandleSensitivityChanged;
-
-        if (interactAction != null)
-        {
-            interactAction.performed -= Interact;
-        }
-        if (flashlightAction != null)
-        {
-            flashlightAction.performed -= ToggleFlashlight;
-        }
+        Gizmos.DrawWireCube(Vector3.zero, new Vector3(pickupAreaSize.x, pickupAreaSize.y, pickupRange));
     }
 }

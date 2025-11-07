@@ -36,13 +36,22 @@ public class BaseHighlightable : MonoBehaviour
             if (materialIndexToChange >= 0 && materialIndexToChange < allMaterials.Length)
             {
                 originalMaterialInstance = new Material(allMaterials[materialIndexToChange]);
-                if (highlightMaterial != null && originalMaterialInstance != null)
+
+                if (highlightMaterial != null && originalMaterialInstance != null && highlightMaterial.shader.name == "Custom/HighlightBlendShader")
                 {
-                    if (highlightMaterial.shader.name == "Custom/HighlightBlendShader")
+                    if (originalMaterialInstance.HasProperty("_BaseMap"))
                     {
-                        if (originalMaterialInstance.HasProperty("_MainTex"))
+                        highlightMaterial.SetTexture("_MainTex", originalMaterialInstance.GetTexture("_BaseMap"));
+                        if (originalMaterialInstance.HasProperty("_BaseColor"))
                         {
-                            highlightMaterial.SetTexture("_MainTex", originalMaterialInstance.GetTexture("_MainTex"));
+                            highlightMaterial.SetColor("_Color", originalMaterialInstance.GetColor("_BaseColor"));
+                        }
+                    }
+                    else if (originalMaterialInstance.HasProperty("_MainTex"))
+                    {
+                        highlightMaterial.SetTexture("_MainTex", originalMaterialInstance.GetTexture("_MainTex"));
+                        if (originalMaterialInstance.HasProperty("_Color"))
+                        {
                             highlightMaterial.SetColor("_Color", originalMaterialInstance.GetColor("_Color"));
                         }
                     }

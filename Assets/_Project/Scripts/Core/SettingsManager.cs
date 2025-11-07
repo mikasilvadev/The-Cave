@@ -10,8 +10,8 @@ public class SettingsManager : MonoBehaviour
     [Header("Configurações")]
     public AudioMixer mainMixer;
     public InputActionAsset playerActions;
-
     public static event Action<float> OnSensitivityChanged;
+    public static event Action OnBindingsChanged;
 
     public const string SENSITIVITY_KEY = "MouseSensitivity";
     public const string VOLUME_KEY = "MasterVolume";
@@ -75,34 +75,7 @@ public class SettingsManager : MonoBehaviour
     {
         string bindings = playerActions.SaveBindingOverridesAsJson();
         PlayerPrefs.SetString(BINDINGS_KEY, bindings);
-    }
 
-    public static class SettingsManager
-    {
-        // Nova API para tecla de interação (padrão E)
-        public const string PREF_INTERACT_KEY = "interact_key";
-        private static KeyCode _interactionKey = KeyCode.E;
-        public static KeyCode InteractionKey
-        {
-            get => _interactionKey;
-            private set => _interactionKey = value;
-        }
-
-        static SettingsManager()
-        {
-            // tenta carregar de PlayerPrefs (salvo como int)
-            if (PlayerPrefs.HasKey(PREF_INTERACT_KEY))
-            {
-                int saved = PlayerPrefs.GetInt(PREF_INTERACT_KEY);
-                try { _interactionKey = (KeyCode)saved; }
-                catch { _interactionKey = KeyCode.E; }
-            }
-        }
-
-        public static void SetInteractionKey(KeyCode newKey, bool save = true)
-        {
-            _interactionKey = newKey;
-            if (save) PlayerPrefs.SetInt(PREF_INTERACT_KEY, (int)newKey);
-        }
+        OnBindingsChanged?.Invoke();
     }
 }

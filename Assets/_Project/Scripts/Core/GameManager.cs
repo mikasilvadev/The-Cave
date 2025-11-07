@@ -28,9 +28,12 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        Time.timeScale = 1f;
+        isGameOver = false;
+
         if (screenFader != null)
         {
-            screenFader.FadeFromBlack(0.0f);
+            screenFader.FadeFromBlack(2.0f);
         }
     }
 
@@ -39,6 +42,8 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
         Debug.Log("GAME MANAGER: TriggerGameOver chamado, Iniciando sequência");
+        if (screenFader == null) screenFader = FindFirstObjectByType<ScreenFader>();
+
         if (screenFader != null)
         {
             screenFader.FadeToBlackInstant();
@@ -67,10 +72,10 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator FadeAndReloadScene(float delay)
     {
-        yield return new WaitForSeconds(delay);
-        Debug.Log($"GAME MANAGER: Esperando {delay}s antes de recarregar");
+        yield return new WaitForSecondsRealtime(delay);
+
+        Debug.Log("GAME MANAGER: Recarregando a cena...");
         string sceneToLoad = SceneManager.GetActiveScene().name;
-        Debug.Log($"GAME MANAGER: Recarregando a cena: {sceneToLoad}");
         SceneManager.LoadScene(sceneToLoad);
     }
 
@@ -80,8 +85,7 @@ public class GameManager : MonoBehaviour
         {
             screenFader.FadeToBlack(delay);
         }
-        yield return new WaitForSeconds(delay);
-        Debug.Log($"GAME MANAGER: Esmaeceu, fechando o jogo.");
+        yield return new WaitForSecondsRealtime(delay);
         QuitGame();
     }
 }

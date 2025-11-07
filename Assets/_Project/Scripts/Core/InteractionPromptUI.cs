@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class InteractionPromptUI : MonoBehaviour
 {
@@ -9,8 +10,8 @@ public class InteractionPromptUI : MonoBehaviour
     [Header("Referências")]
     public GameObject promptVisuals;
     public TextMeshProUGUI promptText;
-
     private Coroutine hideCoroutine;
+    private Dictionary<string, string> keyNameCache = new Dictionary<string, string>();
 
     void Awake()
     {
@@ -23,9 +24,24 @@ public class InteractionPromptUI : MonoBehaviour
             promptVisuals.SetActive(false);
     }
 
+    void Start()
+    {
+        SettingsManager.OnBindingsChanged += ClearCache;
+    }
+
+    void OnDestroy()
+    {
+        SettingsManager.OnBindingsChanged -= ClearCache;
+    }
+
+    private void ClearCache()
+    {
+        keyNameCache.Clear();
+    }
+
     public void ShowPrompt(string actionName, string actionText)
     {
-        string keyName = GetCleanKeyName(actionName);
+        string keyName = GetCachedKeyName(actionName);
 
         if (hideCoroutine != null) StopCoroutine(hideCoroutine);
 
@@ -49,33 +65,42 @@ public class InteractionPromptUI : MonoBehaviour
             promptVisuals.SetActive(false);
     }
 
-    private string GetCleanKeyName(string actionName)
+    private string GetCachedKeyName(string actionName)
     {
+        if (keyNameCache.TryGetValue(actionName, out string cachedName))
+        {
+            return cachedName;
+        }
+
         if (SettingsManager.Instance == null || SettingsManager.Instance.playerActions == null)
             return "?";
 
         var action = SettingsManager.Instance.playerActions.FindAction(actionName);
-        if (action == null) return "NONE";
+        string result = "NONE";
 
-        int bindingIndex = -1;
-        for (int i = 0; i < action.bindings.Count; i++)
+        if (action != null)
         {
-            if (!action.bindings[i].isPartOfComposite)
+            int bindingIndex = -1;
+            for (int i = 0; i < action.bindings.Count; i++)
             {
-                bindingIndex = i;
-                break;
+                if (!action.bindings[i].isPartOfComposite)
+                {
+                    bindingIndex = i;
+                    break;
+                }
+            }
+
+            if (bindingIndex != -1)
+            {
+                result = InputControlPath.ToHumanReadableString(
+                    action.bindings[bindingIndex].effectivePath,
+                    InputControlPath.HumanReadableStringOptions.OmitDevice | InputControlPath.HumanReadableStringOptions.UseShortNames
+                ).ToUpper();
             }
         }
 
-        if (bindingIndex != -1)
-        {
-            return InputControlPath.ToHumanReadableString(
-                action.bindings[bindingIndex].effectivePath,
-                InputControlPath.HumanReadableStringOptions.OmitDevice | InputControlPath.HumanReadableStringOptions.UseShortNames
-            ).ToUpper();
-        }
-
-        return "NONE";
+        keyNameCache[actionName] = result;
+        return result;
     }
 
     private System.Collections.IEnumerator HideAfterSeconds(float duration)

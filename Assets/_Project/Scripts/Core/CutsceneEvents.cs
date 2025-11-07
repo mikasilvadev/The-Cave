@@ -7,7 +7,6 @@ public class CutsceneEvents : MonoBehaviour
 
     public void DesativarControleJogador()
     {
-
         if (scriptDoJogador != null)
         {
             scriptDoJogador.podeMover = false;
@@ -29,6 +28,10 @@ public class CutsceneEvents : MonoBehaviour
         if (scriptDoJogador != null)
         {
             scriptDoJogador.podeMover = true;
+            if (SettingsManager.Instance != null && SettingsManager.Instance.playerActions != null)
+            {
+                SettingsManager.Instance.playerActions.FindActionMap("Player").Enable();
+            }
         }
     }
 }

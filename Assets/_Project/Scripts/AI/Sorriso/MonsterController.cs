@@ -27,16 +27,13 @@ public class MonsterController : MonoBehaviour
 
     [Header("Configurações de Animação")]
     public float animationSpeedMultiplier = 1.0f;
-    public float chasingAnimMultiplier = 2.0f;
+    public float chasingAnimMultiplier = 3.0f;
 
     private bool isActivated = false;
     private bool isFrozen = false;
 
-    [Header("Configurações de Agilidade")]
-    [Tooltip("Velocidade (em graus/s) que o monstro gira para ENCARAR o player")]
-    public float fixedTurnSpeed = 720f;
-
-
+    [Header("Giro Manual (Para não perder o player de vista)")]
+    public float manualTurnSpeed = 15f;
 
     void Awake()
     {
@@ -45,26 +42,11 @@ public class MonsterController : MonoBehaviour
         AnimSpeedID = Animator.StringToHash("Speed");
         audioSource = GetComponent<AudioSource>();
 
-        if (Animator == null)
-            Debug.LogError("MonsterController: Animator não encontrado", gameObject);
-        if (audioSource == null)
-            Debug.LogError("MonsterController: AudioSource não encontrado", gameObject);
-
         if (playerTransform == null)
             Player = GameObject.FindGameObjectWithTag("Player")?.transform;
         else
             Player = playerTransform;
 
-        if (Player == null)
-            Debug.LogError("MonsterController: Player não encontrado", gameObject);
-        else
-        {
-            var playerController = Player.GetComponent<PlayerController>();
-            if (playerController != null && playerController.heldFlashlightObject != null)
-                playerHeldLight = playerController.heldFlashlightObject.GetComponentInChildren<Light>();
-            if (playerHeldLight == null)
-                Debug.LogWarning("MonsterController: Lanterna do Player ainda não encontrada no Awake");
-        }
         states.Add(StateType.Chasing, new ChasingState(this));
         states.Add(StateType.DarkMonitoring, new DarkMonitoringState(this));
         GameManager.OnGameOver += HandleGameOver;
@@ -72,12 +54,13 @@ public class MonsterController : MonoBehaviour
 
     void Start()
     {
-        if (audioSource != null)
+        if (audioSource != null) audioSource.playOnAwake = false;
+        if (Player != null)
         {
-            audioSource.playOnAwake = false;
-            audioSource.spatialBlend = 1.0f;
+            var pc = Player.GetComponent<PlayerController>();
+            if (pc != null && pc.heldFlashlightObject != null)
+                playerHeldLight = pc.heldFlashlightObject.GetComponentInChildren<Light>();
         }
-
         TransitionToState(StateType.DarkMonitoring);
     }
 
@@ -85,44 +68,33 @@ public class MonsterController : MonoBehaviour
     {
         if (playerHeldLight == null && Player != null)
         {
-            var playerController = Player.GetComponent<PlayerController>();
-            if (playerController != null && playerController.heldFlashlightObject != null)
-            {
-                playerHeldLight = playerController.heldFlashlightObject.GetComponentInChildren<Light>();
-            }
+            var pc = Player.GetComponent<PlayerController>();
+            if (pc != null && pc.heldFlashlightObject != null)
+                playerHeldLight = pc.heldFlashlightObject.GetComponentInChildren<Light>();
         }
+        IsPlayerLightOn = (playerHeldLight != null && playerHeldLight.enabled && playerHeldLight.gameObject.activeInHierarchy);
 
-        if (playerHeldLight != null)
-            IsPlayerLightOn = playerHeldLight.enabled && playerHeldLight.gameObject.activeInHierarchy;
-        else
-            IsPlayerLightOn = false;
-        bool shouldExecuteState = isActivated;
-        if (isActivated && Player != null)
-        {
-            Vector3 lookDirection = Player.position - transform.position;
-            lookDirection.y = 0;
-            if (lookDirection != Vector3.zero)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
-                transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation,
-                    targetRotation,
-                    fixedTurnSpeed * Time.deltaTime
-                );
-            }
-        }
-        if (currentState != null && shouldExecuteState)
+        if (isFrozen) return;
+
+        if (isActivated && currentState != null)
         {
             currentState.Execute();
         }
-        if (isActivated && Movement.Agent != null)
+
+        if (isActivated && Movement.Agent != null && Movement.Agent.isOnNavMesh)
         {
-            float currentAgentSpeed = Movement.Agent.velocity.magnitude;
-            float maxAgentSpeed = Movement.Agent.speed;
-            float normalizedSpeed = (maxAgentSpeed > 0) ? (currentAgentSpeed / maxAgentSpeed) : 0f;
-            SetAnimSpeed(normalizedSpeed);
+            float currentSpeed = Movement.Agent.velocity.magnitude;
+            float maxSpeed = Movement.Agent.speed;
+            float animIntensity = (maxSpeed > 0) ? (currentSpeed / maxSpeed) : 0f;
+            SetAnimSpeed(animIntensity);
+
+            if (currentSpeed > 0.5f && Movement.Agent.velocity != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(Movement.Agent.velocity.normalized);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * manualTurnSpeed);
+            }
         }
-        else if (!isActivated)
+        else
         {
             SetAnimSpeed(0);
         }
@@ -130,41 +102,31 @@ public class MonsterController : MonoBehaviour
 
     public void TransitionToState(StateType newState)
     {
-        if (currentState != null)
-            currentState.Exit();
+        if (currentState != null) currentState.Exit();
         if (states.ContainsKey(newState))
         {
             currentState = states[newState];
             IsInChasingState = (newState == StateType.Chasing);
-            Animator.speed = animationSpeedMultiplier;
+            Animator.speed = IsInChasingState ? chasingAnimMultiplier : animationSpeedMultiplier;
             currentState.Enter();
-        }
-        else
-        {
-            Debug.LogError($"MonsterController: Tentou transicionar para um estado inválido: {newState}");
         }
     }
 
     public void ActivateMonster()
     {
         if (isActivated) return;
-
         isActivated = true;
-        Debug.Log("MONSTRO: Player pegou a lanterna");
     }
 
-    public void SetMovementAndAnimationSpeed(float realSpeed, float animSpeed)
+    public void SetMovementAndAnimationSpeed(float realSpeed, float animSpeedBase)
     {
         Movement.SetSpeed(realSpeed);
-        Animator.speed = animSpeed;
+        Animator.speed = animSpeedBase;
     }
 
     public void SetAnimSpeed(float value)
     {
-        if (Animator != null)
-        {
-            Animator.SetFloat(AnimSpeedID, value);
-        }
+        if (Animator != null) Animator.SetFloat(AnimSpeedID, value);
     }
 
     public void TocarSomDePasso()

@@ -8,12 +8,14 @@ public class AIMovement : MonoBehaviour
     public float monitoringSpeed = 1.5f;
     public float chasingSpeed = 30.0f;
 
-    [Header("Configurações de Agente (Ajuste Aqui)")]
-    [Tooltip("Controla a velocidade que o monstro atinge a velocidade máxima. (Maior = Mais Ágil)")]
-    public float agentAcceleration = 500f;
+    [Header("Configurações de Agente (Ajuste Fino)")]
+    [Tooltip("Quão rápido ele atinge a velocidade máxima.")]
+    public float agentAcceleration = 200f;
 
-    [Tooltip("Controla a velocidade de rotação do monstro durante o NavMesh. (Maior = Curvas mais Rápidas)")]
-    public float agentAngularSpeed = 1080f;
+    [Tooltip("Velocidade de giro em graus/s. 2000+ para curvas super fechadas.")]
+    public float agentAngularSpeed = 3000f;
+
+    public bool autoBraking = true;
 
     [Tooltip("Distância máxima para procurar pontos válidos na NavMesh")]
     public float maxSearchRadius = 10f;
@@ -32,7 +34,7 @@ public class AIMovement : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         if (agent == null)
         {
-            Debug.LogError("AIMovement: Não foi encontrado um componente NavMeshAgent", this.gameObject);
+            Debug.LogError("AIMovement: NavMeshAgent não encontrado", gameObject);
             enabled = false;
             return;
         }
@@ -40,38 +42,39 @@ public class AIMovement : MonoBehaviour
         agent.stoppingDistance = defaultStoppingDistance;
         agent.acceleration = agentAcceleration;
         agent.angularSpeed = agentAngularSpeed;
+        agent.autoBraking = autoBraking;
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+    }
+
+    void Update()
+    {
+        if (agent != null)
+        {
+            if (agent.acceleration != agentAcceleration) agent.acceleration = agentAcceleration;
+            if (agent.angularSpeed != agentAngularSpeed) agent.angularSpeed = agentAngularSpeed;
+        }
     }
 
     public bool IsMoving()
     {
-        if (!agent.isOnNavMesh) return false;
-        return !agent.isStopped && agent.velocity.magnitude > 0.1f;
+        if (!IsAgentValid()) return false;
+        return !agent.isStopped && agent.velocity.sqrMagnitude > 0.01f;
     }
 
     public void MoveTo(Vector3 destination)
     {
         if (!IsAgentValid()) return;
 
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(destination, out hit, maxSearchRadius, NavMesh.AllAreas))
+        if (!agent.SetDestination(destination))
         {
-            try
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(destination, out hit, maxSearchRadius, NavMesh.AllAreas))
             {
                 agent.SetDestination(hit.position);
-                agent.isStopped = false;
-                agent.updateRotation = false;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"AIMovement: Erro ao mover para {destination}: {e.Message}");
-                StopMovement();
             }
         }
-        else
-        {
-            Debug.LogWarning($"AIMovement: Não encontrou ponto válido próximo a {destination}");
-            StopMovement();
-        }
+
+        if (agent.isStopped) agent.isStopped = false;
     }
 
     public void FollowTarget(Transform target)
@@ -80,45 +83,28 @@ public class AIMovement : MonoBehaviour
         MoveTo(target.position);
     }
 
-    public void FollowAtDistance(Vector3 targetPosition, float distance)
-    {
-        if (!IsAgentValid()) return;
-        agent.stoppingDistance = defaultStoppingDistance;
-        float currentDistance = Vector3.Distance(transform.position, targetPosition);
-        if (currentDistance > distance)
-        {
-            MoveTo(targetPosition);
-        }
-        else
-        {
-            agent.isStopped = true;
-        }
-    }
-
     public void StopMovement()
     {
-        if (!IsAgentValid()) return;
-
-        agent.isStopped = true;
-        agent.ResetPath();
+        if (IsAgentValid() && !agent.isStopped)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+        }
     }
 
     public void SetSpeed(float speed)
     {
-        if (!IsAgentValid()) return;
-        agent.speed = speed;
+        if (IsAgentValid()) agent.speed = speed;
     }
 
     public void SetStoppingDistance(float newDistance)
     {
-        if (IsAgentValid())
-        {
-            agent.stoppingDistance = newDistance;
-        }
+        if (IsAgentValid()) agent.stoppingDistance = newDistance;
     }
 
     private bool IsAgentValid()
     {
-        return agent != null && agent.isOnNavMesh;
+        return agent != null && agent.isOnNavMesh && agent.isActiveAndEnabled;
     }
 }

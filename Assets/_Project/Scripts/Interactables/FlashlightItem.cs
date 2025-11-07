@@ -9,8 +9,6 @@ public class FlashlightItem : BaseHighlightable
 
     private Light myLight;
 
-    private bool playerInRange = false;
-
     protected override void Awake()
     {
         base.Awake();
@@ -25,29 +23,7 @@ public class FlashlightItem : BaseHighlightable
         }
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            playerInRange = true;
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            playerInRange = false;
-    }
-
-    private void Update()
-    {
-        if (!playerInRange) return;
-
-        if (Input.GetKeyDown(SettingsManager.InteractionKey))
-        {
-            PickUp();
-        }
-    }
-
-    public void PickUp()
+    public void OnPickup()
     {
         Destroy(gameObject);
     }

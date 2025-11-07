@@ -7,14 +7,11 @@ public class PlayerCaptureZone : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (hasBeenTriggered) return;
-
-        if (other.CompareTag("Monster"))
+        if (other.CompareTag("Monster") && other.TryGetComponent(out MonsterController monster))
         {
-            MonsterController monsterController = other.GetComponent<MonsterController>();
-            if (monsterController != null && monsterController.IsInChasingState)
+            if (monster.IsInChasingState)
             {
-                Debug.LogWarning("PLAYER CAPTURE ZONE: O Monstro te pegou no estado Chasing");
-
+                Debug.LogWarning("PLAYER CAPTURE ZONE: O Monstro te pegou");
                 hasBeenTriggered = true;
 
                 if (GameManager.Instance != null)
@@ -23,12 +20,12 @@ public class PlayerCaptureZone : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogError("PlayerCaptureZone: Não encontrou o GameManager.Instance", this.gameObject);
+                    Debug.LogError("PlayerCaptureZone: GameManager não encontrado");
                 }
             }
-            else if (monsterController != null && !monsterController.IsInChasingState)
+            else
             {
-                Debug.Log("PLAYER CAPTURE ZONE: O Monstro te tocou, mas estava no modo DarkMonitoring");
+                Debug.Log("Contato com monstro (Safe State)");
             }
         }
     }

@@ -29,3 +29,7 @@
 
 # Unity Archives
 *.unitypackage
+
+# Pastas de Ferramentas (do seu projeto)
+/[Pp]olybrush [Dd]ata/
+/[Pp]ro[Bb]uilder [Dd]ata/

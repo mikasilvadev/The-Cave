@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
-using System.Collections;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -20,7 +19,6 @@ public class PauseMenu : MonoBehaviour
     public TextMeshProUGUI flashlightButtonText;
     public Button sprintButton;
     public TextMeshProUGUI sprintButtonText;
-    public Text interactionKeyLabel; // arraste no inspector para mostrar tecla atual
 
     [Header("Ações (Nomes EXATOS do Input Asset)")]
     [SerializeField] private string interactActionName = "Interact";
@@ -79,9 +77,6 @@ public class PauseMenu : MonoBehaviour
         UpdateBindingText(interactActionName, interactButtonText);
         UpdateBindingText(flashlightActionName, flashlightButtonText);
         UpdateBindingText(sprintActionName, sprintButtonText);
-
-        if (interactionKeyLabel != null)
-            interactionKeyLabel.text = SettingsManager.InteractionKey.ToString();
     }
 
     public void OnSensitivityChanged(float value)
@@ -189,34 +184,5 @@ public class PauseMenu : MonoBehaviour
         interactButton.interactable = isInteractable;
         flashlightButton.interactable = isInteractable;
         sprintButton.interactable = isInteractable;
-    }
-
-    // Chame este método via OnClick do botão "Redefinir Interagir" no menu de pause
-    public void StartRebindInteractionKey()
-    {
-        StartCoroutine(WaitForKeyPressAndBind());
-        if (interactionKeyLabel != null)
-            interactionKeyLabel.text = "Pressione uma tecla...";
-    }
-
-    private IEnumerator WaitForKeyPressAndBind()
-    {
-        bool bound = false;
-        while (!bound)
-        {
-            // varre todos os KeyCodes simples — suficiente para rebind comum
-            foreach (KeyCode kc in System.Enum.GetValues(typeof(KeyCode)))
-            {
-                if (Input.GetKeyDown(kc))
-                {
-                    SettingsManager.SetInteractionKey(kc, true);
-                    if (interactionKeyLabel != null)
-                        interactionKeyLabel.text = kc.ToString();
-                    bound = true;
-                    break;
-                }
-            }
-            yield return null;
-        }
     }
 }
