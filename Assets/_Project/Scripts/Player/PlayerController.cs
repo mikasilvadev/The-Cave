@@ -31,13 +31,17 @@ public class PlayerController : MonoBehaviour
     public float defaultMaxLookUp = 0f;
 
     [Header("Lanterna e Interação")]
-    public Transform pickupZoneCenter;
-    public float pickupRange = 1f;
-    public Vector2 pickupAreaSize = new Vector2(1f, 2f);
+    [Tooltip("Distância em que a lanterna começa a brilhar (highlight)")]
+    public float flashlightHighlightRange = 4.0f;
+
+    [Tooltip("Distância para a porta ativar o fim de jogo")]
     public float distanciaMaximaParaPortaFinal = 2.0f;
+    [Tooltip("Distância que a porta começa a brilhar (highlight)")]
     public float distanciaDestaquePortaFinal = 5.0f;
+
     public LayerMask pickupLayer;
     public LayerMask portaLayer;
+
     public GameObject heldFlashlightObject;
     private bool hasFlashlight = false;
     private Light heldFlashlightLight;
@@ -207,7 +211,8 @@ public class PlayerController : MonoBehaviour
         if (!hasFlashlight)
         {
             Physics.SyncTransforms();
-            Collider[] colliders = Physics.OverlapBox(pickupZoneCenter.position, new Vector3(pickupAreaSize.x / 2, pickupAreaSize.y / 2, pickupRange / 2), pickupZoneCenter.rotation, pickupLayer);
+            Collider[] colliders = Physics.OverlapSphere(transform.position, flashlightHighlightRange, pickupLayer);
+
             FlashlightItem closestItem = null;
             float closestDist = float.MaxValue;
 
@@ -235,34 +240,49 @@ public class PlayerController : MonoBehaviour
                 else InteractionPromptUI.Instance.HidePrompt();
             }
         }
-        else if (heldFlashlightLight != null && heldFlashlightLight.enabled)
+        else
         {
             if (lastHighlightedItem != null) { lastHighlightedItem.RemoveHighlight(); lastHighlightedItem = null; }
 
-            Collider[] portas = Physics.OverlapSphere(transform.position, distanciaDestaquePortaFinal, portaLayer);
-            HighlightableObject portaProx = null;
-            float minDist = float.MaxValue;
+            if (heldFlashlightLight != null && heldFlashlightLight.enabled)
+            {
+                Collider[] portas = Physics.OverlapSphere(transform.position, distanciaDestaquePortaFinal, portaLayer);
+                HighlightableObject portaProx = null;
+                float minDist = float.MaxValue;
 
-            foreach (var c in portas) if (c.CompareTag("PortaFinal"))
+                foreach (var c in portas) if (c.CompareTag("PortaFinal"))
+                    {
+                        float d = Vector3.Distance(transform.position, c.transform.position);
+                        if (d < minDist) { minDist = d; portaProx = c.GetComponent<HighlightableObject>(); }
+                    }
+
+                if (portaProx != null && minDist <= distanciaMaximaParaPortaFinal)
                 {
-                    float d = Vector3.Distance(transform.position, c.transform.position);
-                    if (d < minDist) { minDist = d; portaProx = c.GetComponent<HighlightableObject>(); }
+                    GameManager.Instance.TriggerGameWin();
+                }
+                else if (InteractionPromptUI.Instance != null)
+                {
+                    InteractionPromptUI.Instance.HidePrompt();
                 }
 
-            if (portaProx != null && minDist <= distanciaMaximaParaPortaFinal)
-            {
-                GameManager.Instance.TriggerGameWin();
+                if (portaSendoDestacada != portaProx)
+                {
+                    if (portaSendoDestacada != null) portaSendoDestacada.RemoveHighlight();
+                    portaSendoDestacada = portaProx;
+                    if (portaSendoDestacada != null) portaSendoDestacada.Highlight();
+                }
             }
-            else if (InteractionPromptUI.Instance != null)
+            else
             {
-                InteractionPromptUI.Instance.HidePrompt();
-            }
-
-            if (portaSendoDestacada != portaProx)
-            {
-                if (portaSendoDestacada != null) portaSendoDestacada.RemoveHighlight();
-                portaSendoDestacada = portaProx;
-                if (portaSendoDestacada != null) portaSendoDestacada.Highlight();
+                if (portaSendoDestacada != null)
+                {
+                    portaSendoDestacada.RemoveHighlight();
+                    portaSendoDestacada = null;
+                }
+                if (InteractionPromptUI.Instance != null)
+                {
+                    InteractionPromptUI.Instance.HidePrompt();
+                }
             }
         }
     }
@@ -288,7 +308,7 @@ public class PlayerController : MonoBehaviour
         MonsterController monster = FindFirstObjectByType<MonsterController>();
         if (monster != null) monster.ActivateMonster();
         if (InteractionPromptUI.Instance != null)
-            InteractionPromptUI.Instance.ShowPrompt(flashlightActionName, "to Toggle Flashlight", 5.0f);
+            InteractionPromptUI.Instance.ShowPrompt(flashlightActionName, "to ToggleFlashlight", 5.0f);
         yield return null;
     }
 
@@ -318,11 +338,13 @@ public class PlayerController : MonoBehaviour
         GameManager.OnGameOver -= HandleGameOver;
         if (SettingsManager.Instance != null) SettingsManager.OnSensitivityChanged -= HandleSensitivityChanged;
     }
+
     void OnDrawGizmosSelected()
     {
-        if (pickupZoneCenter == null) return;
-        Gizmos.color = new Color(0, 1, 0, 0.5f);
-        Gizmos.matrix = Matrix4x4.TRS(pickupZoneCenter.position, pickupZoneCenter.rotation, Vector3.one);
-        Gizmos.DrawWireCube(Vector3.zero, new Vector3(pickupAreaSize.x, pickupAreaSize.y, pickupRange));
+        Gizmos.color = new Color(0, 1, 0, 0.25f);
+        Gizmos.DrawSphere(transform.position, flashlightHighlightRange);
+
+        Gizmos.color = new Color(0, 0, 1, 0.25f);
+        Gizmos.DrawSphere(transform.position, distanciaDestaquePortaFinal);
     }
 }

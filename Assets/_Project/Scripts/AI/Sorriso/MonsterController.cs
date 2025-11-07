@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(AIMovement))]
-[RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Animator))]
 public class MonsterController : MonoBehaviour
 {
@@ -17,8 +16,9 @@ public class MonsterController : MonoBehaviour
     private Light playerHeldLight;
     public bool IsPlayerLightOn { get; private set; }
 
-    private AudioSource audioSource;
-    [Header("Sons da Animação")]
+    [Header("Áudio dos Passos")]
+    [Tooltip("Arraste aqui o AudioSource que deve tocar os PASSOS (NÃO o da respiração)")]
+    public AudioSource footstepAudioSource;
     public AudioClip[] footstepSounds;
     private int nextFootstepIndex = 0;
 
@@ -40,12 +40,20 @@ public class MonsterController : MonoBehaviour
         Movement = GetComponent<AIMovement>();
         Animator = GetComponentInChildren<Animator>();
         AnimSpeedID = Animator.StringToHash("Speed");
-        audioSource = GetComponent<AudioSource>();
 
-        if (playerTransform == null)
-            Player = GameObject.FindGameObjectWithTag("Player")?.transform;
-        else
-            Player = playerTransform;
+        if (footstepAudioSource == null)
+        {
+            Debug.LogWarning("MonsterController: Arraste o AudioSource dos PASSOS para o campo 'Footstep Audio Source' no Inspector. Tentando pegar o primeiro...");
+            footstepAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (Animator == null) Debug.LogError("MonsterController: Animator não encontrado", gameObject);
+        if (footstepAudioSource == null) Debug.LogError("MonsterController: AudioSource dos passos não encontrado", gameObject);
+
+        if (playerTransform == null) Player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        else Player = playerTransform;
+
+        if (Player == null) Debug.LogError("MonsterController: Player não encontrado", gameObject);
 
         states.Add(StateType.Chasing, new ChasingState(this));
         states.Add(StateType.DarkMonitoring, new DarkMonitoringState(this));
@@ -54,7 +62,13 @@ public class MonsterController : MonoBehaviour
 
     void Start()
     {
-        if (audioSource != null) audioSource.playOnAwake = false;
+        if (footstepAudioSource != null)
+        {
+            footstepAudioSource.playOnAwake = false;
+            footstepAudioSource.spatialBlend = 1.0f;
+        }
+
+
         if (Player != null)
         {
             var pc = Player.GetComponent<PlayerController>();
@@ -133,20 +147,20 @@ public class MonsterController : MonoBehaviour
     {
         if (Animator != null && Animator.GetFloat(AnimSpeedID) < 0.1f)
         {
-            if (audioSource != null && audioSource.isPlaying)
+            if (footstepAudioSource != null && footstepAudioSource.isPlaying)
             {
-                audioSource.Stop();
+                footstepAudioSource.Stop();
             }
             return;
         }
 
-        if (audioSource != null && footstepSounds != null && footstepSounds.Length > 0)
+        if (footstepAudioSource != null && footstepSounds != null && footstepSounds.Length > 0)
         {
             nextFootstepIndex %= footstepSounds.Length;
             AudioClip clipToPlay = footstepSounds[nextFootstepIndex];
 
             if (clipToPlay != null)
-                audioSource.PlayOneShot(clipToPlay);
+                footstepAudioSource.PlayOneShot(clipToPlay);
             else
                 DebugLogWarningOnce($"MonsterController: AudioClip no índice {nextFootstepIndex} é nulo.", this);
 
@@ -172,10 +186,11 @@ public class MonsterController : MonoBehaviour
         Movement.StopMovement();
         Animator.SetFloat(AnimSpeedID, 0);
         Movement.enabled = false;
-        if (audioSource != null)
+
+        if (footstepAudioSource != null)
         {
-            audioSource.Stop();
-            audioSource.enabled = false;
+            footstepAudioSource.Stop();
+            footstepAudioSource.enabled = false;
         }
         enabled = false;
     }
