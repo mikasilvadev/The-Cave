@@ -27,6 +27,19 @@ public class DarkMonitoringState : IState
             Debug.Log("MONSTRO: Player ligou a lanterna, voltando ao Chasing");
             controller.TransitionToState(StateType.Chasing);
         }
+        else
+        {
+            if (controller.Player != null)
+            {
+                float distanceToPlayer = Vector3.Distance(controller.transform.position, controller.Player.position);
+
+                if (distanceToPlayer <= 1.0f)
+                {
+                    Debug.Log("MONSTRO: Captura por proximidade no escuro! (Distância: " + distanceToPlayer + ")");
+                    GameManager.Instance.TriggerGameOver();
+                }
+            }
+        }
     }
 
     public void Exit()

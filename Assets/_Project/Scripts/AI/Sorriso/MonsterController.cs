@@ -21,6 +21,8 @@ public class MonsterController : MonoBehaviour
     public AudioSource footstepAudioSource;
     public AudioClip[] footstepSounds;
     private int nextFootstepIndex = 0;
+    [Tooltip("Arraste aqui o AudioSource que deve tocar a RESPIRAÇÃO")]
+    public AudioSource breathingAudioSource;
 
     private IState currentState;
     private Dictionary<StateType, IState> states = new Dictionary<StateType, IState>();
@@ -41,18 +43,12 @@ public class MonsterController : MonoBehaviour
         Animator = GetComponentInChildren<Animator>();
         AnimSpeedID = Animator.StringToHash("Speed");
 
-        if (footstepAudioSource == null)
-        {
-            Debug.LogWarning("MonsterController: Arraste o AudioSource dos PASSOS para o campo 'Footstep Audio Source' no Inspector. Tentando pegar o primeiro...");
-            footstepAudioSource = GetComponent<AudioSource>();
-        }
+        if (footstepAudioSource == null) Debug.LogError("MonsterController: Arraste o AudioSource dos STEPS", gameObject);
+        if (breathingAudioSource == null) Debug.LogError("MonsterController: Arraste o AudioSource de IDLE", gameObject);
 
         if (Animator == null) Debug.LogError("MonsterController: Animator não encontrado", gameObject);
-        if (footstepAudioSource == null) Debug.LogError("MonsterController: AudioSource dos passos não encontrado", gameObject);
-
         if (playerTransform == null) Player = GameObject.FindGameObjectWithTag("Player")?.transform;
         else Player = playerTransform;
-
         if (Player == null) Debug.LogError("MonsterController: Player não encontrado", gameObject);
 
         states.Add(StateType.Chasing, new ChasingState(this));
@@ -64,10 +60,15 @@ public class MonsterController : MonoBehaviour
     {
         if (footstepAudioSource != null)
         {
-            footstepAudioSource.playOnAwake = false;
             footstepAudioSource.spatialBlend = 1.0f;
         }
+        if (breathingAudioSource != null)
+        {
+            breathingAudioSource.spatialBlend = 1.0f;
+        }
 
+        isActivated = false;
+        StopAllSounds();
 
         if (Player != null)
         {
@@ -129,7 +130,13 @@ public class MonsterController : MonoBehaviour
     public void ActivateMonster()
     {
         if (isActivated) return;
+        Debug.Log("MONSTRO: Player pegou a lanterna, ativando");
         isActivated = true;
+
+        if (breathingAudioSource != null && !breathingAudioSource.isPlaying)
+        {
+            breathingAudioSource.Play();
+        }
     }
 
     public void SetMovementAndAnimationSpeed(float realSpeed, float animSpeedBase)
@@ -178,20 +185,30 @@ public class MonsterController : MonoBehaviour
         }
     }
 
+    private void StopAllSounds()
+    {
+        if (footstepAudioSource != null && footstepAudioSource.isPlaying)
+        {
+            footstepAudioSource.Stop();
+        }
+        if (breathingAudioSource != null && breathingAudioSource.isPlaying)
+        {
+            breathingAudioSource.Stop();
+        }
+    }
+
+
     private void HandleGameOver()
     {
         if (isFrozen) return;
         isFrozen = true;
-        Debug.Log("MONSTRO: Game Over, congelando");
+        Debug.Log("MONSTRO: Game Over, congelando e silenciando");
         Movement.StopMovement();
         Animator.SetFloat(AnimSpeedID, 0);
         Movement.enabled = false;
-
-        if (footstepAudioSource != null)
-        {
-            footstepAudioSource.Stop();
-            footstepAudioSource.enabled = false;
-        }
+        StopAllSounds();
+        if (footstepAudioSource != null) footstepAudioSource.enabled = false;
+        if (breathingAudioSource != null) breathingAudioSource.enabled = false;
         enabled = false;
     }
 
