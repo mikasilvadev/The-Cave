@@ -122,13 +122,13 @@ public class PauseMenu : MonoBehaviour
         rebindingOperation = action.PerformInteractiveRebinding()
             .WithControlsExcluding("Mouse")
             .OnMatchWaitForAnother(0.1f)
-            .OnComplete(operation => FinishRebinding(operation, action, actionName, buttonText))
-            .OnCancel(operation => FinishRebinding(operation, action, actionName, buttonText));
+            .OnComplete(operation => FinishRebinding(operation, action, actionName, buttonText, false))
+            .OnCancel(operation => FinishRebinding(operation, action, actionName, buttonText, true));
 
         rebindingOperation.Start();
     }
 
-    private void FinishRebinding(InputActionRebindingExtensions.RebindingOperation operation, InputAction action, string actionName, TextMeshProUGUI buttonText)
+    private void FinishRebinding(InputActionRebindingExtensions.RebindingOperation operation, InputAction action, string actionName, TextMeshProUGUI buttonText, bool wasCanceled)
     {
         operation.Dispose();
         rebindingOperation = null;
@@ -136,6 +136,11 @@ public class PauseMenu : MonoBehaviour
         action.Enable();
         UpdateBindingText(actionName, buttonText);
         ToggleUIInteractable(true);
+
+        if (!wasCanceled && SettingsManager.Instance != null)
+        {
+            SettingsManager.Instance.SaveKeybinds();
+        }
     }
 
     private void UpdateBindingText(string actionName, TextMeshProUGUI buttonText)

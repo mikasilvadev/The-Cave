@@ -19,13 +19,16 @@ public class PauseController : MonoBehaviour
             Debug.LogError("PauseController: A variável 'Pause Menu Canvas' não foi arrastada no Inspector do _GameManager!", this);
             return;
         }
+
         pauseCanvasGroup = pauseMenuCanvas.GetComponent<CanvasGroup>();
         if (pauseCanvasGroup == null)
         {
             Debug.LogWarning($"PauseController: O objeto '{pauseMenuCanvas.name}' não tem um CanvasGroup. Recomendo adicionar um para melhor controle da UI.", pauseMenuCanvas);
         }
+
         if (playerController == null)
             playerController = FindFirstObjectByType<PlayerController>();
+
         if (SettingsManager.Instance != null && SettingsManager.Instance.playerActions != null)
         {
             uiMap = SettingsManager.Instance.playerActions.FindActionMap("UI");
@@ -38,6 +41,7 @@ public class PauseController : MonoBehaviour
         {
             Debug.LogError("PauseController: SettingsManager ou playerActions não encontrados no Start!");
         }
+
         HideMenu();
     }
 
@@ -62,24 +66,29 @@ public class PauseController : MonoBehaviour
     public void TogglePause()
     {
         isPaused = !isPaused;
+
         if (isPaused)
         {
             if (InteractionPromptUI.Instance != null)
-            {
                 InteractionPromptUI.Instance.HidePrompt();
-            }
+
             Time.timeScale = 0f;
+            AudioListener.pause = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
             if (playerController != null)
                 playerController.enabled = false;
+
             ShowMenu();
+
             if (playerMap != null) playerMap.Disable();
             if (uiMap != null) uiMap.Enable();
         }
         else
         {
             Time.timeScale = 1f;
+            AudioListener.pause = false;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
@@ -90,6 +99,9 @@ public class PauseController : MonoBehaviour
 
             if (uiMap != null) uiMap.Disable();
             if (playerMap != null) playerMap.Enable();
+
+            SettingsManager.TriggerBindingsChanged();
+
         }
     }
 

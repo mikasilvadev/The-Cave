@@ -12,6 +12,9 @@ public class InteractionPromptUI : MonoBehaviour
     public TextMeshProUGUI promptText;
     private Coroutine hideCoroutine;
     private Dictionary<string, string> keyNameCache = new Dictionary<string, string>();
+    private string currentActionName;
+    private string currentPromptMessage;
+    private bool promptVisible;
 
     void Awake()
     {
@@ -39,8 +42,30 @@ public class InteractionPromptUI : MonoBehaviour
         keyNameCache.Clear();
     }
 
+    void OnEnable()
+    {
+        SettingsManager.OnBindingsChanged += HandleBindingsChanged;
+    }
+
+    void OnDisable()
+    {
+        SettingsManager.OnBindingsChanged -= HandleBindingsChanged;
+    }
+
+    private void HandleBindingsChanged()
+    {
+        if (!promptVisible || string.IsNullOrEmpty(currentActionName))
+            return;
+
+        ShowPrompt(currentActionName, currentPromptMessage);
+    }
+
     public void ShowPrompt(string actionName, string actionText)
     {
+        currentActionName = actionName;
+        currentPromptMessage = actionText;
+        promptVisible = true;
+
         string keyName = GetCachedKeyName(actionName);
 
         if (hideCoroutine != null) StopCoroutine(hideCoroutine);
@@ -61,11 +86,15 @@ public class InteractionPromptUI : MonoBehaviour
 
     public void HidePrompt()
     {
+        promptVisible = false;
+        currentActionName = null;
+        currentPromptMessage = null;
+
         if (promptVisuals != null)
             promptVisuals.SetActive(false);
     }
 
-    private string GetCachedKeyName(string actionName)
+    public string GetCachedKeyName(string actionName)
     {
         if (keyNameCache.TryGetValue(actionName, out string cachedName))
         {

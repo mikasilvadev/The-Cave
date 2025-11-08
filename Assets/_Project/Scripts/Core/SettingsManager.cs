@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
 using System;
+using UnityEngine.InputSystem.Utilities;
 
 public class SettingsManager : MonoBehaviour
 {
@@ -71,6 +72,40 @@ public class SettingsManager : MonoBehaviour
         return PlayerPrefs.GetFloat(SENSITIVITY_KEY, DEFAULT_SENSITIVITY);
     }
 
+    public string GetBindingDisplayName(string actionName)
+    {
+        if (playerActions == null || string.IsNullOrEmpty(actionName)) return string.Empty;
+
+        var action = playerActions.FindAction(actionName);
+        if (action == null) return string.Empty;
+
+        int bindingIndex = -1;
+
+        if (action.controls.Count > 0)
+        {
+            bindingIndex = action.GetBindingIndexForControl(action.controls[0]);
+        }
+
+        if (bindingIndex == -1)
+        {
+            for (int i = 0; i < action.bindings.Count; i++)
+            {
+                if (!action.bindings[i].isPartOfComposite)
+                {
+                    bindingIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (bindingIndex == -1) return string.Empty;
+
+        return InputControlPath.ToHumanReadableString(
+            action.bindings[bindingIndex].effectivePath,
+            InputControlPath.HumanReadableStringOptions.OmitDevice | InputControlPath.HumanReadableStringOptions.UseShortNames
+        ).ToUpper();
+    }
+
     public void SaveKeybinds()
     {
         string bindings = playerActions.SaveBindingOverridesAsJson();
@@ -78,4 +113,10 @@ public class SettingsManager : MonoBehaviour
 
         OnBindingsChanged?.Invoke();
     }
+
+    public static void TriggerBindingsChanged()
+    {
+        OnBindingsChanged?.Invoke();
+    }
+
 }

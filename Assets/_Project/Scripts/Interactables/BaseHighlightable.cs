@@ -1,27 +1,29 @@
 using UnityEngine;
 using System.Collections;
+using TMPro;
 
 public class BaseHighlightable : MonoBehaviour
 {
     [Header("Configurações de Destaque")]
     public Material highlightMaterial;
-    [Tooltip("Qual índice de material deve ser trocado? (0 é o primeiro, 1 é o segundo, etc.)")]
     public int materialIndexToChange = 0;
-
-    [Tooltip("Velocidade do pulso (em segundos). 0.5 = pulsa 2x por segundo.")]
     public float pulseSpeed = 0.5f;
-
-    [Tooltip("Intensidade mínima do destaque durante o pulso (ex: 0.2 para nunca apagar totalmente).")]
     [Range(0, 1)] public float minHighlightIntensity = 0.2f;
-
-    [Tooltip("Intensidade máxima do destaque durante o pulso (ex: 0.8 para nunca brilhar totalmente).")]
     [Range(0, 1)] public float maxHighlightIntensity = 0.8f;
+
+    [Header("Prompt Flutuante (3D)")]
+    public GameObject worldSpacePromptVisuals;
+    public bool showWorldSpacePrompt = true;
+    public string associatedActionName = "Interact";
+    public string promptText = "to Interact";
 
     protected MeshRenderer meshRenderer;
     private Material originalMaterialInstance;
     private Material[] allMaterials;
     private Coroutine pulseCoroutine;
     private bool isPulsing = false;
+    private TextMeshProUGUI worldSpaceTextComponent;
+    private bool pendingRefresh = false;
 
     protected virtual void Awake()
     {
@@ -32,28 +34,22 @@ public class BaseHighlightable : MonoBehaviour
         if (meshRenderer != null)
         {
             allMaterials = meshRenderer.materials;
-
             if (materialIndexToChange >= 0 && materialIndexToChange < allMaterials.Length)
             {
                 originalMaterialInstance = new Material(allMaterials[materialIndexToChange]);
-
-                if (highlightMaterial != null && originalMaterialInstance != null && highlightMaterial.shader.name == "Custom/HighlightBlendShader")
+                if (highlightMaterial != null && highlightMaterial.shader.name == "Custom/HighlightBlendShader")
                 {
                     if (originalMaterialInstance.HasProperty("_BaseMap"))
                     {
                         highlightMaterial.SetTexture("_MainTex", originalMaterialInstance.GetTexture("_BaseMap"));
                         if (originalMaterialInstance.HasProperty("_BaseColor"))
-                        {
                             highlightMaterial.SetColor("_Color", originalMaterialInstance.GetColor("_BaseColor"));
-                        }
                     }
                     else if (originalMaterialInstance.HasProperty("_MainTex"))
                     {
                         highlightMaterial.SetTexture("_MainTex", originalMaterialInstance.GetTexture("_MainTex"));
                         if (originalMaterialInstance.HasProperty("_Color"))
-                        {
                             highlightMaterial.SetColor("_Color", originalMaterialInstance.GetColor("_Color"));
-                        }
                     }
                 }
             }
@@ -68,26 +64,63 @@ public class BaseHighlightable : MonoBehaviour
             Debug.LogWarning($"BaseHighlightable: Não encontrou MeshRenderer em {gameObject.name}");
             enabled = false;
         }
+
+        if (worldSpacePromptVisuals != null)
+        {
+            worldSpaceTextComponent = worldSpacePromptVisuals.GetComponentInChildren<TextMeshProUGUI>();
+            worldSpacePromptVisuals.SetActive(false);
+        }
+    }
+
+    protected virtual void OnEnable()
+    {
+        SettingsManager.OnBindingsChanged += HandleBindingsChanged;
+
+        if (pendingRefresh)
+        {
+            UpdateWorldSpacePromptText();
+            pendingRefresh = false;
+        }
+    }
+
+    protected virtual void OnDisable()
+    {
+        SettingsManager.OnBindingsChanged -= HandleBindingsChanged;
+
+        if (pulseCoroutine != null) StopCoroutine(pulseCoroutine);
+        isPulsing = false;
+        SetHighlightMaterial(false);
     }
 
     public virtual void Highlight()
     {
         if (isPulsing) return;
+        isPulsing = true;
 
         SetHighlightMaterial(true);
         pulseCoroutine = StartCoroutine(PulseEffect());
-        isPulsing = true;
+
+        if (showWorldSpacePrompt && worldSpacePromptVisuals != null)
+        {
+            worldSpacePromptVisuals.SetActive(true);
+            UpdateWorldSpacePromptText();
+        }
     }
 
     public virtual void RemoveHighlight()
     {
+        if (!isPulsing) return;
+        isPulsing = false;
+
         if (pulseCoroutine != null)
         {
             StopCoroutine(pulseCoroutine);
             pulseCoroutine = null;
         }
-        isPulsing = false;
+
         SetHighlightMaterial(false);
+        if (worldSpacePromptVisuals != null)
+            worldSpacePromptVisuals.SetActive(false);
     }
 
     private IEnumerator PulseEffect()
@@ -99,12 +132,9 @@ public class BaseHighlightable : MonoBehaviour
             float currentIntensity = Mathf.Lerp(minHighlightIntensity, maxHighlightIntensity, pingPong);
 
             if (highlightMaterial != null && highlightMaterial.shader.name == "Custom/HighlightBlendShader")
-            {
                 highlightMaterial.SetFloat("_HighlightIntensity", currentIntensity);
-            }
 
             SetHighlightMaterial(true);
-
             timer += Time.deltaTime;
             yield return null;
         }
@@ -113,34 +143,39 @@ public class BaseHighlightable : MonoBehaviour
     private void SetHighlightMaterial(bool applyHighlight)
     {
         if (meshRenderer == null || allMaterials == null || materialIndexToChange < 0 || materialIndexToChange >= allMaterials.Length) return;
-
-        if (applyHighlight)
-        {
-            allMaterials[materialIndexToChange] = highlightMaterial;
-        }
-        else
-        {
-            allMaterials[materialIndexToChange] = originalMaterialInstance;
-        }
+        if (applyHighlight) allMaterials[materialIndexToChange] = highlightMaterial;
+        else allMaterials[materialIndexToChange] = originalMaterialInstance;
         meshRenderer.materials = allMaterials;
     }
 
-    protected virtual void OnDisable()
+    private void HandleBindingsChanged()
     {
-        if (pulseCoroutine != null)
+        if (isPulsing && showWorldSpacePrompt && worldSpacePromptVisuals != null && worldSpacePromptVisuals.activeSelf)
         {
-            StopCoroutine(pulseCoroutine);
-            pulseCoroutine = null;
+            UpdateWorldSpacePromptText();
+            pendingRefresh = false;
         }
-        isPulsing = false;
-        SetHighlightMaterial(false);
+        else
+        {
+            pendingRefresh = true;
+        }
+    }
+
+    private void UpdateWorldSpacePromptText()
+    {
+        if (InteractionPromptUI.Instance != null && worldSpaceTextComponent != null)
+        {
+            string keyName = InteractionPromptUI.Instance.GetCachedKeyName(associatedActionName);
+            worldSpaceTextComponent.text = $"Press [{keyName}] {promptText}";
+        }
+        else if (worldSpaceTextComponent != null)
+        {
+            worldSpaceTextComponent.text = promptText;
+        }
     }
 
     protected virtual void OnDestroy()
     {
-        if (originalMaterialInstance != null)
-        {
-            Destroy(originalMaterialInstance);
-        }
+        if (originalMaterialInstance != null) Destroy(originalMaterialInstance);
     }
 }
